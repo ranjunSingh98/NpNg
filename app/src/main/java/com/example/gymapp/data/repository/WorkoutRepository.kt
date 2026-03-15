@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 class WorkoutRepository(private val workoutDao: WorkoutDao) {
     val recentSessions: Flow<List<WorkoutSession>> = workoutDao.getRecentSessions()
+    val allSessions: Flow<List<WorkoutSession>> = workoutDao.getAllSessions()
 
     suspend fun createSession(type: String): Long {
         val session = WorkoutSession(type = type)
@@ -31,9 +32,5 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
 
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {
         return workoutDao.getEntriesForSession(sessionId)
-    }
-    
-    suspend fun getLastSessionByType(type: String): WorkoutSession? {
-        return workoutDao.getLastSessionByType(type)
     }
 }

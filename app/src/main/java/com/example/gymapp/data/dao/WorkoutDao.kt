@@ -26,14 +26,11 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sessions ORDER BY timestamp DESC LIMIT 3")
     fun getRecentSessions(): Flow<List<WorkoutSession>>
 
-    @Query("SELECT * FROM workout_sessions WHERE type = :type ORDER BY timestamp DESC LIMIT 1")
-    suspend fun getLastSessionByType(type: String): WorkoutSession?
+    @Query("SELECT * FROM workout_sessions ORDER BY timestamp DESC")
+    fun getAllSessions(): Flow<List<WorkoutSession>>
 
     @Query("SELECT * FROM exercise_entries WHERE sessionId = :sessionId ORDER BY id ASC")
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>>
-    
-    @Query("SELECT * FROM exercise_entries WHERE sessionId = :sessionId ORDER BY id ASC")
-    suspend fun getEntriesForSessionSync(sessionId: Long): List<ExerciseEntry>
 
     @Transaction
     @Query("""

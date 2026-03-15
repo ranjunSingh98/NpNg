@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import java.text.SimpleDateFormat
@@ -43,7 +42,7 @@ fun HistoryScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val allSessions by viewModel.recentSessions.collectAsState(initial = emptyList())
+    val allSessions by viewModel.allSessions.collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {

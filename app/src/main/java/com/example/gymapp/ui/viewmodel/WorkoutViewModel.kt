@@ -9,8 +9,6 @@ import com.example.gymapp.data.repository.WorkoutRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -18,9 +16,9 @@ import kotlinx.coroutines.launch
 class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() {
 
     val recentSessions: Flow<List<WorkoutSession>> = repository.recentSessions
+    val allSessions: Flow<List<WorkoutSession>> = repository.allSessions
 
     private val _currentSessionId = MutableStateFlow<Long?>(null)
-    val currentSessionId: StateFlow<Long?> = _currentSessionId.asStateFlow()
 
     fun startSession(type: String) {
         viewModelScope.launch {
@@ -57,8 +55,6 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
     fun finishCurrentSession() {
         _currentSessionId.value = null
     }
-
-    suspend fun getSessionById(id: Long) = repository.getSessionById(id)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getPreviousWorkoutEntries(type: String): Flow<List<ExerciseEntry>> {

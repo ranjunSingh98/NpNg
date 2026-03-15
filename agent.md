@@ -12,23 +12,24 @@ This document summarizes the architecture, key implementation details, and lesso
 ### 1. Progressive Overload Comparison
 - **Logic**: When starting a "Legs" workout, the app queries the database for the most recent session of type "Legs" *excluding* the current one.
 - **Implementation**: Uses a Room `@Transaction` query with `flatMapLatest` in the ViewModel to reactively update the "Last time" view when the session starts.
+- **Ordering**: Queries use `ORDER BY id ASC` to ensure sets appear in the exact chronological order they were recorded.
 
 ### 2. Session Management
 - **Automated Start**: Sessions are created in the DB as soon as the `ActiveWorkoutScreen` is launched using `LaunchedEffect`.
-- **Exit Strategy**: A `BackHandler` intercepts the system back button, and a `TopAppBar` back icon triggers a confirmation `AlertDialog`.
-- **Discard Logic**: If "Discard" is chosen, the `WorkoutSession` (and its cascaded `ExerciseEntry` items) are deleted from the Room DB.
+- **Exit Strategy**: A `BackHandler` intercepts the system back button.
+- **Discard Logic**: Empty sessions are auto-discarded. If sets exist, a confirmation `AlertDialog` allows Saving or Discarding.
 
 ### 3. UI Patterns
-- **Collapsible History**: Used `groupBy` on exercise names and `AnimatedVisibility` to create expandable cards for previous workout data.
-- **Reusable Components**: `WorkoutButton` is used for large, consistent touch targets on the dashboard.
+- **Double-Collapsible History**: In the Active Workout view, the "Last time" section is collapsed by default. Expanding it reveals exercise cards, which are *also* collapsible to show/hide specific sets.
+- **Persistent Inputs**: Weight and Reps fields persist after adding a set to facilitate rapid logging of multiple sets.
+- **Unified Scrolling**: The Active Workout screen uses a single `verticalScroll` on a `Column` to avoid nested scroll issues with `LazyColumn`.
 
 ## Technical Lessons Learned
 
 ### Build & Lint Fixes
-- **Navigation Parameters**: Always ensure `NavGraph` calls match the screen's constructor exactly (e.g., `onBack` vs `onWorkoutFinished`).
-- **Room/Repository Sync**: Ensure any new DAO methods are also exposed through the `WorkoutRepository` before calling them in the `ViewModel`.
-- **Compose UI**: `AlertDialog` buttons are styled using `ButtonDefaults.textButtonColors(contentColor = ...)` rather than a direct `color` parameter on the `TextButton`.
-- **Coroutines**: Using `flatMapLatest` or other complex flow transformations often requires `@OptIn(ExperimentalCoroutinesApi::class)` in the ViewModel.
+- **Room Ordering**: Relying on `setNumber` for ordering can be inconsistent; `ORDER BY id ASC` is more reliable for chronological set logging.
+- **Compose UI**: Use `weight(1f)` with `verticalScroll` for flexible layouts that include a fixed footer button.
+- **Data Flow**: `flatMapLatest` is essential for reactive queries that depend on a dynamic ID (like the current session).
 
 ## Data Schema
 - **WorkoutSession**: `id`, `type`, `timestamp`.
