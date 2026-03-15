@@ -57,6 +57,7 @@ fun ActiveWorkoutScreen(
     var weight by remember { mutableStateOf("") }
     var reps by remember { mutableStateOf("") }
     var showExitDialog by remember { mutableStateOf(false) }
+    var lastTimeExpanded by remember { mutableStateOf(false) }
 
     val lastWorkoutEntries by viewModel.getPreviousWorkoutEntries(workoutType).collectAsState(initial = emptyList())
     val currentEntries by viewModel.getCurrentSessionEntries().collectAsState(initial = emptyList())
@@ -139,13 +140,32 @@ fun ActiveWorkoutScreen(
             ) {
                 if (lastWorkoutEntries.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "Last time:",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        groupedLastEntries.forEach { (name, entries) ->
-                            CollapsibleExerciseCard(exerciseName = name, entries = entries)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { lastTimeExpanded = !lastTimeExpanded }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Last time:",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Icon(
+                                imageVector = if (lastTimeExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (lastTimeExpanded) "Collapse History" else "Expand History",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        
+                        AnimatedVisibility(visible = lastTimeExpanded) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                groupedLastEntries.forEach { (name, entries) ->
+                                    CollapsibleExerciseCard(exerciseName = name, entries = entries)
+                                }
+                            }
                         }
                     }
                 }
@@ -187,7 +207,6 @@ fun ActiveWorkoutScreen(
                                 reps = reps.toIntOrNull() ?: 0,
                                 setNumber = nextSetNumber
                             )
-                            // We no longer clear weight and reps as per request
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
