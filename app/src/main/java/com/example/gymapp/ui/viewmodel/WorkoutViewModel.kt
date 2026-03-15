@@ -76,6 +76,10 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         return repository.getEntriesForSession(sessionId)
     }
 
+    suspend fun getLastWorkoutDate(workoutType: String): Long? {
+        return repository.getLastWorkoutTimestampByType(workoutType)
+    }
+
     class Factory(private val repository: WorkoutRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(WorkoutViewModel::class.java)) {

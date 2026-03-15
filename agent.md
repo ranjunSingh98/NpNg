@@ -35,3 +35,6 @@ This document summarizes the architecture, key implementation details, and lesso
 - **WorkoutSession**: `id`, `type`, `timestamp`.
 - **ExerciseEntry**: `id`, `sessionId` (FK), `exerciseName`, `weight`, `reps`, `setNumber`.
 - **Relationship**: 1-to-Many (`WorkoutSession` -> `ExerciseEntry`) with `OnDelete = ForeignKey.CASCADE`.
+
+## Agent Operating Procedures
+- After every change, run build and fix errors.

@@ -33,4 +33,8 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {
         return workoutDao.getEntriesForSession(sessionId)
     }
+
+    suspend fun getLastWorkoutTimestampByType(workoutType: String): Long? {
+        return workoutDao.getLastWorkoutTimestampByType(workoutType)
+    }
 }

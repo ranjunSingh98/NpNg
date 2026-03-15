@@ -8,7 +8,7 @@ import com.example.gymapp.data.dao.WorkoutDao
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.WorkoutSession
 
-@Database(entities = [WorkoutSession::class, ExerciseEntry::class], version = 1, exportSchema = false)
+@Database(entities = [WorkoutSession::class, ExerciseEntry::class], version = 2, exportSchema = false)
 abstract class WorkoutDatabase : RoomDatabase() {
     abstract fun workoutDao(): WorkoutDao
 
@@ -19,7 +19,6 @@ abstract class WorkoutDatabase : RoomDatabase() {
         fun getDatabase(context: Context): WorkoutDatabase {
             return Instance ?: synchronized(this) {
                 Room.databaseBuilder(context, WorkoutDatabase::class.java, "workout_database")
-                    .fallbackToDestructiveMigration()
                     .build()
                     .also { Instance = it }
             }

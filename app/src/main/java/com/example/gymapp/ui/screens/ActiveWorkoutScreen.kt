@@ -30,12 +30,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +46,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,18 +74,33 @@ fun ActiveWorkoutScreen(
         viewModel.startSession(workoutType)
     }
 
-    val handleBack = {
+    val scope = rememberCoroutineScope()
+
+    suspend fun performBackAction() {
+        val wasLastTimeExpanded = lastTimeExpanded // Store current state
+        if (wasLastTimeExpanded) {
+            lastTimeExpanded = false // Trigger collapse animation
+        }
+
         if (currentEntries.isEmpty()) {
             viewModel.discardCurrentSession()
+            if (wasLastTimeExpanded) {
+                delay(300) // Allow animation to play if it was triggered
+            }
             onBack()
         } else {
             showExitDialog = true
+            if (wasLastTimeExpanded) {
+                delay(300) // Still allow animation to play if it was triggered, before showing dialog
+            }
         }
     }
 
     // Handle system back button
     BackHandler {
-        handleBack()
+        scope.launch {
+            performBackAction()
+        }
     }
 
     if (showExitDialog) {
@@ -116,10 +135,19 @@ fun ActiveWorkoutScreen(
             TopAppBar(
                 title = { Text(workoutType) },
                 navigationIcon = {
-                    IconButton(onClick = handleBack) {
+                    IconButton(onClick = {
+                        scope.launch {
+                            performBackAction()
+                        }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         },
         modifier = modifier
@@ -240,9 +268,8 @@ fun ActiveWorkoutScreen(
                 onClick = {
                     if (currentEntries.isEmpty()) {
                         viewModel.discardCurrentSession()
-                    } else {
-                        viewModel.finishCurrentSession()
                     }
+                    viewModel.finishCurrentSession()
                     onBack()
                 },
                 modifier = Modifier

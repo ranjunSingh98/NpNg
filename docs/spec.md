@@ -19,19 +19,38 @@ be sufficiently self-explanatory.
 - **WorkoutSession**: Tracks session type and timestamp.
 - **ExerciseEntry**: Tracks specific sets with weight, reps, and exercise name.
 - **Cascading Deletes**: Discarding a session removes all associated entries.
+- **Database Versioning**: Incremented database version to 2 for schema changes.
+- **Migration Strategy**: Removed `fallbackToDestructiveMigration()` as direct migrations will be managed if needed.
+- **Previous Workout Retrieval**: Refined query to accurately show the preceding workout of the same type, excluding the current active session.
 
 ### 2. User Flow & UI Screens - [DONE]
-- **Dashboard**: Quick access to 4 main workout types + Recent History preview.
-- **Active Workout**: 
+- **Dashboard**:
+    - Quick access to 4 main workout types + Recent History preview.
+    - **UI/UX Improvements**:
+        - Removed gradient background from workout category cards for improved contrast.
+        - Adjusted workout category card size for better aesthetics.
+        - Fixed layout issues to prevent cards from taking excessive screen space.
+- **Active Workout**:
     - Real-time logging of sets.
     - Persistent weight/reps inputs for fast multi-set entry.
     - Collapsible "Last Time" view grouped by exercise for progressive overload tracking.
+        - **UI/UX Improvements**: Fixed animation glitch during back navigation to ensure smooth transitions.
     - Intelligent exit logic: Auto-discards empty sessions, asks for confirmation if sets exist.
+    - **UI/UX Improvements**: Header background now blends seamlessly with the rest of the screen.
 - **History**: Full scrollable history with expandable session details.
+    - **UI/UX Improvements**: Header background now blends seamlessly with the rest of the screen.
 
 ### 3. Navigation - [DONE]
 - Integrated `Navigation Compose` for seamless screen transitions.
 - Shared `ViewModel` architecture for consistent data state across screens.
+
+### 4. Component Refactoring - [DONE]
+- Moved `WorkoutCategoryCard` component to a dedicated `ui/components/` package.
+- Removed unused `WorkoutButton` component.
+
+### 5. Dependency Updates - [DONE]
+- All project dependencies in `gradle/libs.versions.toml` updated to their latest stable versions (Kotlin, KSP, Compose BOM, Room, Navigation Compose, etc.).
+- Addressed deprecated `jvmTarget` usage in `app/build.gradle.kts` by migrating to `compilerOptions` DSL.
 
 ## Future Roadmap (Planned Features)
 
