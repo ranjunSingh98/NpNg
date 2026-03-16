@@ -46,4 +46,13 @@ interface WorkoutDao {
         ORDER BY id ASC
     """)
     fun getPreviousWorkoutEntriesByType(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>>
+
+    @Query("""
+        SELECT DISTINCT LOWER(exerciseName) 
+        FROM exercise_entries 
+        INNER JOIN workout_sessions ON exercise_entries.sessionId = workout_sessions.id
+        WHERE workout_sessions.type = :workoutType
+        ORDER BY exerciseName ASC
+    """)
+    fun getExerciseNamesByType(workoutType: String): Flow<List<String>>
 }

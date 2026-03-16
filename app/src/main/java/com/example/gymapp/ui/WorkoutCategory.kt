@@ -26,5 +26,9 @@ data class WorkoutCategory(
             WorkoutCategory("Chest", ChestYellow, iconRes = R.drawable.ic_chest),
             WorkoutCategory("Arms", ArmsPurple, iconRes = R.drawable.ic_arms)
         )
+        
+        fun getByName(name: String): WorkoutCategory? {
+            return categories.find { it.name.equals(name, ignoreCase = true) }
+        }
     }
 }

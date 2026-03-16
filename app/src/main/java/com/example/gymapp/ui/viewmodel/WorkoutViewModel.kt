@@ -8,6 +8,7 @@ import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() {
@@ -27,7 +28,7 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         viewModelScope.launch {
             val entry = ExerciseEntry(
                 sessionId = sessionId,
-                exerciseName = exerciseName,
+                exerciseName = exerciseName.trim(),
                 weight = weight,
                 reps = reps,
                 setNumber = setNumber
@@ -46,9 +47,7 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         }
     }
 
-    fun finishCurrentSession() { // Removed sessionId parameter
-        // No need to fetch session or delete explicitly here, as the session is simply finished (saved).
-        // The _currentSessionId is cleared to indicate no active session in the ViewModel.
+    fun finishCurrentSession() {
         _currentSessionId.value = null
     }
 
@@ -62,6 +61,16 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
 
     suspend fun getLastWorkoutDate(workoutType: String): Long? {
         return repository.getLastWorkoutTimestampByType(workoutType)
+    }
+
+    fun getExerciseNamesByType(workoutType: String): Flow<List<String>> {
+        return repository.getExerciseNamesByType(workoutType).map { names ->
+            names.map { name ->
+                name.lowercase().split(" ").joinToString(" ") { word ->
+                    word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                }
+            }.distinct()
+        }
     }
 
     class Factory(private val repository: WorkoutRepository) : ViewModelProvider.Factory {

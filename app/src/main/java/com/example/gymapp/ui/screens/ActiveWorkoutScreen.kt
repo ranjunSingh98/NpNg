@@ -21,7 +21,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,6 +68,13 @@ fun ActiveWorkoutScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     var lastTimeExpanded by remember { mutableStateOf(false) }
     var activeSessionId by remember { mutableStateOf<Long?>(null) }
+    var expandedAutocomplete by remember { mutableStateOf(false) }
+
+    val historyExerciseNames by viewModel.getExerciseNamesByType(workoutType).collectAsState(initial = emptyList())
+    val filteredNames = remember(exerciseName, historyExerciseNames) {
+        if (exerciseName.isBlank()) emptyList()
+        else historyExerciseNames.filter { it.contains(exerciseName, ignoreCase = true) && it != exerciseName }
+    }
 
     LaunchedEffect(workoutType) {
         val newSessionId = viewModel.startSession(workoutType)
@@ -215,19 +225,49 @@ fun ActiveWorkoutScreen(
                     }
                 }
 
-                OutlinedTextField(
-                    value = exerciseName,
-                    onValueChange = { exerciseName = it },
-                    label = { Text("Exercise Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        if (exerciseName.isNotBlank()) {
-                            IconButton(onClick = { exerciseName = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                ExposedDropdownMenuBox(
+                    expanded = expandedAutocomplete && filteredNames.isNotEmpty(),
+                    onExpandedChange = { expandedAutocomplete = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = exerciseName,
+                        onValueChange = {
+                            exerciseName = it
+                            // Only expand if the user is actively typing (value is not blank)
+                            expandedAutocomplete = it.isNotBlank()
+                        },
+                        label = { Text("Exercise Name") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true),
+                        trailingIcon = if (exerciseName.isNotBlank()) {
+                            {
+                                IconButton(onClick = { 
+                                    exerciseName = ""
+                                    expandedAutocomplete = false
+                                }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                }
                             }
+                        } else null
+                    )
+                    
+                    ExposedDropdownMenu(
+                        expanded = expandedAutocomplete && filteredNames.isNotEmpty(),
+                        onDismissRequest = { expandedAutocomplete = false }
+                    ) {
+                        filteredNames.forEach { name ->
+                            DropdownMenuItem(
+                                text = { Text(name) },
+                                onClick = {
+                                    exerciseName = name
+                                    expandedAutocomplete = false
+                                }
+                            )
                         }
                     }
-                )
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -239,13 +279,13 @@ fun ActiveWorkoutScreen(
                         label = { Text("Weight (lbs)") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        trailingIcon = {
-                            if (weight.isNotBlank()) {
+                        trailingIcon = if (weight.isNotBlank()) {
+                            {
                                 IconButton(onClick = { weight = "" }) {
                                     Icon(Icons.Default.Clear, contentDescription = "Clear Weight")
                                 }
                             }
-                        }
+                        } else null
                     )
                     OutlinedTextField(
                         value = reps,
@@ -253,20 +293,22 @@ fun ActiveWorkoutScreen(
                         label = { Text("Reps") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        trailingIcon = {
-                            if (reps.isNotBlank()) {
+                        trailingIcon = if (reps.isNotBlank()) {
+                            {
                                 IconButton(onClick = { reps = "" }) {
                                     Icon(Icons.Default.Clear, contentDescription = "Clear Reps")
                                 }
                             }
-                        }
+                        } else null
                     )
                 }
 
                 Button(
                     onClick = {
+                        // Explicitly close suggestions when adding a set
+                        expandedAutocomplete = false
                         if (exerciseName.isNotBlank() && weight.isNotBlank() && reps.isNotBlank()) {
-                            val nextSetNumber = currentEntries.filter { it.exerciseName == exerciseName }.size + 1
+                            val nextSetNumber = currentEntries.filter { it.exerciseName.equals(exerciseName, ignoreCase = true) }.size + 1
                             activeSessionId?.let {
                                 viewModel.addEntry(
                                     sessionId = it,

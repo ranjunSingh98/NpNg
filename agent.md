@@ -11,25 +11,29 @@ This document summarizes the architecture, key implementation details, and lesso
 
 ### 1. Progressive Overload Comparison
 - **Logic**: When starting a "Legs" workout, the app queries the database for the most recent session of type "Legs" *excluding* the current one.
-- **Implementation**: Uses a Room `@Transaction` query with `flatMapLatest` in the ViewModel to reactively update the "Last time" view when the session starts.
-- **Ordering**: Queries use `ORDER BY id ASC` to ensure sets appear in the exact chronological order they were recorded.
+- **Implementation**: Uses a Room `@Transaction` query with `flatMapLatest` (or manual state management in VM) to reactively update the "Last time" view.
+- **Ordering**: Queries use `ORDER BY id ASC` for entries to ensure sets appear in chronological order.
 
 ### 2. Session Management
-- **Automated Start**: Sessions are created in the DB as soon as the `ActiveWorkoutScreen` is launched using `LaunchedEffect`.
+- **Automated Start**: Sessions are created in the DB as soon as the `ActiveWorkoutScreen` is launched.
 - **Exit Strategy**: A `BackHandler` intercepts the system back button.
 - **Discard Logic**: Empty sessions are auto-discarded. If sets exist, a confirmation `AlertDialog` allows Saving or Discarding.
 
 ### 3. UI Patterns
-- **Double-Collapsible History**: In the Active Workout view, the "Last time" section is collapsed by default. Expanding it reveals exercise cards, which are *also* collapsible to show/hide specific sets.
-- **Persistent Inputs**: Weight and Reps fields persist after adding a set to facilitate rapid logging of multiple sets.
-- **Unified Scrolling**: The Active Workout screen uses a single `verticalScroll` on a `Column` to avoid nested scroll issues with `LazyColumn`.
+- **Double-Collapsible History**: In the Active Workout view, the "Last time" section is collapsible. Inside, exercises are also collapsible.
+- **Persistent Inputs**: Weight and Reps fields persist after adding a set.
+- **Unified Scrolling**: Active Workout screen uses `verticalScroll` on a `Column` to avoid nested scroll issues.
+
+### 4. Smart Autocomplete
+- **Contextual Suggestions**: Exercise suggestions are filtered by the current `workoutType` (e.g., Legs only shows Legs exercises).
+- **Normalization**: Suggestions are normalized to Title Case (e.g., "squat" -> "Squat") to deduplicate variations in casing or accidental typos in history.
 
 ## Technical Lessons Learned
 
 ### Build & Lint Fixes
-- **Room Ordering**: Relying on `setNumber` for ordering can be inconsistent; `ORDER BY id ASC` is more reliable for chronological set logging.
-- **Compose UI**: Use `weight(1f)` with `verticalScroll` for flexible layouts that include a fixed footer button.
-- **Data Flow**: `flatMapLatest` is essential for reactive queries that depend on a dynamic ID (like the current session).
+- **Room Ordering**: `ORDER BY id ASC` is the most reliable for chronological logging.
+- **Autocomplete**: Use `ExposedDropdownMenuBox` with `ExposedDropdownMenuAnchorType.PrimaryEditable`.
+- **Data Flow**: Use `LOWER()` in SQL and `.distinct()` in Kotlin to clean up user-entered strings for UI suggestions.
 
 ## Data Schema
 - **WorkoutSession**: `id`, `type`, `timestamp`.

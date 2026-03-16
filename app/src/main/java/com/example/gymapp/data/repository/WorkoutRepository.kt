@@ -37,4 +37,8 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
     suspend fun getLastWorkoutTimestampByType(workoutType: String): Long? {
         return workoutDao.getLastWorkoutTimestampByType(workoutType)
     }
+
+    fun getExerciseNamesByType(workoutType: String): Flow<List<String>> {
+        return workoutDao.getExerciseNamesByType(workoutType)
+    }
 }

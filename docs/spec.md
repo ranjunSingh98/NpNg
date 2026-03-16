@@ -20,62 +20,51 @@ be sufficiently self-explanatory.
 - **ExerciseEntry**: Tracks specific sets with weight, reps, and exercise name.
 - **Cascading Deletes**: Discarding a session removes all associated entries.
 - **Database Versioning**: Incremented database version to 2 for schema changes.
-- **Migration Strategy**: Removed `fallbackToDestructiveMigration()` as direct migrations will be managed if needed.
-- **Previous Workout Retrieval**: Refined query to accurately show the preceding workout of the same type, excluding the current active session.
+- **Previous Workout Retrieval**: Refined query to accurately show the preceding workout of the same type.
 
 ### 2. User Flow & UI Screens - [DONE]
 - **Dashboard**:
     - Quick access to 4 main workout types + Recent History preview.
     - **UI/UX Improvements**:
-        - Removed gradient background from workout category cards for improved contrast.
-        - Adjusted workout category card size for better aesthetics.
-        - Fixed layout issues to prevent cards from taking excessive screen space.
+        - **Recent History**: Fixed items to be tappable and expandable (via `WorkoutSessionCard`).
+        - **Custom Workouts**: FAB implemented with a name dialog to start custom sessions.
 - **Active Workout**:
     - Real-time logging of sets.
     - Persistent weight/reps inputs for fast multi-set entry.
-    - Collapsible "Last Time" view grouped by exercise for progressive overload tracking.
-        - **UI/UX Improvements**: Fixed animation glitch during back navigation to ensure smooth transitions.
-    - Intelligent exit logic: Auto-discards empty sessions, asks for confirmation if sets exist.
-    - **UI/UX Improvements**: Header background now blends seamlessly with the rest of the screen.
+    - Collapsible "Last Time" view grouped by exercise.
+    - **Exercise Autocomplete**: Refined to only suggest exercises from the *current session type* and deduplicate casing issues (e.g., "sQuat" and "SQUAT" both suggest "Squat").
 - **History**: Full scrollable history with expandable session details.
-    - **UI/UX Improvements**: Header background now blends seamlessly with the rest of the screen.
+    - **Shared Components**: Refactored `WorkoutSessionCard` for consistent look.
 
 ### 3. Navigation - [DONE]
-- Integrated `Navigation Compose` for seamless screen transitions.
-- Shared `ViewModel` architecture for consistent data state across screens.
+- Integrated `Navigation Compose` with a shared `ViewModel`.
 
 ### 4. Component Refactoring - [DONE]
-- Moved `WorkoutCategoryCard` component to a dedicated `ui/components/` package.
-- Removed unused `WorkoutButton` component.
+- Created `WorkoutSessionCard` as a shared component.
 
 ### 5. Dependency Updates - [DONE]
-- All project dependencies in `gradle/libs.versions.toml` updated to their latest stable versions (Kotlin, KSP, Compose BOM, Room, Navigation Compose, etc.).
-- Addressed deprecated `jvmTarget` usage in `app/build.gradle.kts` by migrating to `compilerOptions` DSL.
+- All project dependencies updated to latest stable.
 
 ## Future Roadmap (Planned Features)
 
 ### 1. Enhanced Customization
-- **Custom Workout Types**: Implement the logic for the `+` button to allow users to define their own workout categories beyond the initial four.
+- **Persistent Custom Workout Types**: Currently, custom workouts are session-based. Future update will allow saving them to the dashboard.
 - **Edit/Delete History**: Allow users to correct mistakes in past sessions or delete specific entries.
 
 ### 2. Analytics & Progress
-- **Progress Charts**: Visual graphs showing weight/volume increase over time for specific exercises.
+- **Progress Charts**: Visual graphs showing weight/volume increase over time.
 - **Personal Records (PRs)**: Highlight when a user hits a new max weight or rep count.
 
 ### 3. Settings & Utilities
 - **Unit Selection**: Toggle between `lbs` and `kg`.
-- **Data Export/Import**: Ability to backup workout history to a CSV or JSON file.
 - **Rest Timer**: Optional simple timer between sets.
 
 ### 4. Polish
-- **Exercise Auto-complete**: Suggest exercise names based on history to reduce typing.
 - **Dark/Light Mode**: Full Material 3 theme support.
 
 
 //TODO
-1. Fix recent history not expanding, not tappable.
-2. plus button func
-3. move plus button to floating
-4. update icons
-6. autocomplete in ex name
-7. fix keyb theme
+1. Edit/Delete History entries.
+2. Persistent Custom Workout Types (save to DB).
+3. Rest Timer.
+4. Unit Selection (lbs/kg).
