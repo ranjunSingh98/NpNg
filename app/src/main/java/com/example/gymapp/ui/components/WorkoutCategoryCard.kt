@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -15,16 +16,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.gymapp.ui.WorkoutCategory
 import java.text.SimpleDateFormat
 import java.util.Date
 
 @Composable
 fun WorkoutCategoryCard(
-    workoutType: String,
-    icon: ImageVector,
+    category: WorkoutCategory,
     lastWorkoutDate: Long?,
     dateFormat: SimpleDateFormat,
     onClick: () -> Unit
@@ -44,15 +45,24 @@ fun WorkoutCategoryCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = workoutType,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(end = 16.dp)
-            )
-            Column {
+            if (category.iconRes != null) {
+                Icon(
+                    painter = painterResource(id = category.iconRes),
+                    contentDescription = category.name,
+                    tint = category.accentColor,
+                    modifier = Modifier.size(48.dp)
+                )
+            } else if (category.imageVector != null) {
+                Icon(
+                    imageVector = category.imageVector,
+                    contentDescription = category.name,
+                    tint = category.accentColor,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+            Column(modifier = Modifier.padding(start = 16.dp)) {
                 Text(
-                    text = workoutType,
+                    text = category.name,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
