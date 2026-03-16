@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,41 +64,56 @@ fun ActiveWorkoutScreen(
     var reps by remember { mutableStateOf("") }
     var showExitDialog by remember { mutableStateOf(false) }
     var lastTimeExpanded by remember { mutableStateOf(false) }
+    var activeSessionId by remember { mutableStateOf<Long?>(null) }
 
-    val lastWorkoutEntries by viewModel.getPreviousWorkoutEntries(workoutType).collectAsState(initial = emptyList())
-    val currentEntries by viewModel.getCurrentSessionEntries().collectAsState(initial = emptyList())
+    LaunchedEffect(workoutType) {
+        val newSessionId = viewModel.startSession(workoutType)
+        activeSessionId = newSessionId
+    }
+
+    // Collect last workout entries based on activeSessionId
+    val lastWorkoutEntries by remember(workoutType, activeSessionId) {
+        if (activeSessionId != null) {
+            viewModel.getPreviousWorkoutEntries(workoutType, activeSessionId!!)
+        } else {
+            flowOf(emptyList())
+        }
+    }.collectAsState(initial = emptyList())
+
+    val currentEntries by remember(activeSessionId) {
+        if (activeSessionId != null) {
+            viewModel.getEntriesForSession(activeSessionId!!)
+        } else {
+            flowOf(emptyList())
+        }
+    }.collectAsState(initial = emptyList())
 
     val groupedLastEntries = remember(lastWorkoutEntries) {
         lastWorkoutEntries.groupBy { it.exerciseName }
     }
 
-    LaunchedEffect(workoutType) {
-        viewModel.startSession(workoutType)
-    }
-
     val scope = rememberCoroutineScope()
 
     suspend fun performBackAction() {
-        val wasLastTimeExpanded = lastTimeExpanded // Store current state
+        val wasLastTimeExpanded = lastTimeExpanded
         if (wasLastTimeExpanded) {
-            lastTimeExpanded = false // Trigger collapse animation
+            lastTimeExpanded = false
         }
 
         if (currentEntries.isEmpty()) {
-            viewModel.discardCurrentSession()
+            activeSessionId?.let { viewModel.discardCurrentSession(it) }
             if (wasLastTimeExpanded) {
-                delay(300) // Allow animation to play if it was triggered
+                delay(300)
             }
             onBack()
         } else {
             showExitDialog = true
             if (wasLastTimeExpanded) {
-                delay(300) // Still allow animation to play if it was triggered, before showing dialog
+                delay(300)
             }
         }
     }
 
-    // Handle system back button
     BackHandler {
         scope.launch {
             performBackAction()
@@ -119,7 +136,7 @@ fun ActiveWorkoutScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        viewModel.discardCurrentSession()
+                        activeSessionId?.let { viewModel.discardCurrentSession(it) }
                         onBack()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -187,7 +204,7 @@ fun ActiveWorkoutScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
-                        
+
                         AnimatedVisibility(visible = lastTimeExpanded) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 groupedLastEntries.forEach { (name, entries) ->
@@ -202,7 +219,14 @@ fun ActiveWorkoutScreen(
                     value = exerciseName,
                     onValueChange = { exerciseName = it },
                     label = { Text("Exercise Name") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        if (exerciseName.isNotBlank()) {
+                            IconButton(onClick = { exerciseName = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            }
+                        }
+                    }
                 )
 
                 Row(
@@ -214,14 +238,28 @@ fun ActiveWorkoutScreen(
                         onValueChange = { weight = it },
                         label = { Text("Weight (lbs)") },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        trailingIcon = {
+                            if (weight.isNotBlank()) {
+                                IconButton(onClick = { weight = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear Weight")
+                                }
+                            }
+                        }
                     )
                     OutlinedTextField(
                         value = reps,
                         onValueChange = { reps = it },
                         label = { Text("Reps") },
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        trailingIcon = {
+                            if (reps.isNotBlank()) {
+                                IconButton(onClick = { reps = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear Reps")
+                                }
+                            }
+                        }
                     )
                 }
 
@@ -229,12 +267,15 @@ fun ActiveWorkoutScreen(
                     onClick = {
                         if (exerciseName.isNotBlank() && weight.isNotBlank() && reps.isNotBlank()) {
                             val nextSetNumber = currentEntries.filter { it.exerciseName == exerciseName }.size + 1
-                            viewModel.addEntry(
-                                exerciseName = exerciseName,
-                                weight = weight.toDoubleOrNull() ?: 0.0,
-                                reps = reps.toIntOrNull() ?: 0,
-                                setNumber = nextSetNumber
-                            )
+                            activeSessionId?.let {
+                                viewModel.addEntry(
+                                    sessionId = it,
+                                    exerciseName = exerciseName,
+                                    weight = weight.toDoubleOrNull() ?: 0.0,
+                                    reps = reps.toIntOrNull() ?: 0,
+                                    setNumber = nextSetNumber
+                                )
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -248,7 +289,7 @@ fun ActiveWorkoutScreen(
                     text = "Current Log",
                     style = MaterialTheme.typography.titleMedium
                 )
-                
+
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -267,9 +308,10 @@ fun ActiveWorkoutScreen(
             Button(
                 onClick = {
                     if (currentEntries.isEmpty()) {
-                        viewModel.discardCurrentSession()
+                        activeSessionId?.let { viewModel.discardCurrentSession(it) }
+                    } else {
+                        viewModel.finishCurrentSession()
                     }
-                    viewModel.finishCurrentSession()
                     onBack()
                 },
                 modifier = Modifier

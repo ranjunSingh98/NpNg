@@ -70,3 +70,12 @@ be sufficiently self-explanatory.
 ### 4. Polish
 - **Exercise Auto-complete**: Suggest exercise names based on history to reduce typing.
 - **Dark/Light Mode**: Full Material 3 theme support.
+
+
+//TODO
+1. Fix recent history not expanding, not tappable.
+2. plus button func
+3. move plus button to floating
+4. update icons
+6. autocomplete in ex name
+7. fix keyb theme

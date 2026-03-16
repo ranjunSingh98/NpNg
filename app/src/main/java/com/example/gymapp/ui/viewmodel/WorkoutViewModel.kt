@@ -6,11 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.data.repository.WorkoutRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() {
@@ -20,15 +17,13 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
 
     private val _currentSessionId = MutableStateFlow<Long?>(null)
 
-    fun startSession(type: String) {
-        viewModelScope.launch {
-            val id = repository.createSession(type)
-            _currentSessionId.value = id
-        }
+    suspend fun startSession(type: String): Long {
+        val id = repository.createSession(type)
+        _currentSessionId.value = id
+        return id
     }
 
-    fun addEntry(exerciseName: String, weight: Double, reps: Int, setNumber: Int) {
-        val sessionId = _currentSessionId.value ?: return
+    fun addEntry(sessionId: Long, exerciseName: String, weight: Double, reps: Int, setNumber: Int) {
         viewModelScope.launch {
             val entry = ExerciseEntry(
                 sessionId = sessionId,
@@ -41,8 +36,7 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         }
     }
 
-    fun discardCurrentSession() {
-        val sessionId = _currentSessionId.value ?: return
+    fun discardCurrentSession(sessionId: Long) {
         viewModelScope.launch {
             val session = repository.getSessionById(sessionId)
             if (session != null) {
@@ -52,24 +46,14 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         }
     }
 
-    fun finishCurrentSession() {
+    fun finishCurrentSession() { // Removed sessionId parameter
+        // No need to fetch session or delete explicitly here, as the session is simply finished (saved).
+        // The _currentSessionId is cleared to indicate no active session in the ViewModel.
         _currentSessionId.value = null
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun getPreviousWorkoutEntries(type: String): Flow<List<ExerciseEntry>> {
-        return _currentSessionId.flatMapLatest { currentId ->
-            if (currentId == null) flowOf(emptyList())
-            else repository.getPreviousWorkoutEntriesByType(type, currentId)
-        }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun getCurrentSessionEntries(): Flow<List<ExerciseEntry>> {
-        return _currentSessionId.flatMapLatest { id ->
-            if (id == null) flowOf(emptyList())
-            else repository.getEntriesForSession(id)
-        }
+    fun getPreviousWorkoutEntries(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>> {
+        return repository.getPreviousWorkoutEntriesByType(type, excludeSessionId)
     }
 
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {
