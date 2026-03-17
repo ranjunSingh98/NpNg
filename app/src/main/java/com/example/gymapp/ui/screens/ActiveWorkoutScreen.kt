@@ -84,8 +84,9 @@ fun ActiveWorkoutScreen(
     val historyExerciseNames by historyExerciseNamesFlow.collectAsState(initial = emptyList())
 
     val filteredNames = remember(exerciseName, historyExerciseNames) {
-        if (exerciseName.isBlank()) emptyList()
-        else historyExerciseNames.filter { it.contains(exerciseName, ignoreCase = true) && it != exerciseName }
+        val normalizedQuery = exerciseName.trim().replace("\\s+".toRegex(), " ")
+        if (normalizedQuery.isBlank()) emptyList()
+        else historyExerciseNames.filter { it.contains(normalizedQuery, ignoreCase = true) && it != normalizedQuery }
     }
 
     LaunchedEffect(workoutType) {

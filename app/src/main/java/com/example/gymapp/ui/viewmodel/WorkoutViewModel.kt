@@ -23,7 +23,7 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         viewModelScope.launch {
             val entry = ExerciseEntry(
                 sessionId = sessionId,
-                exerciseName = exerciseName.trim(),
+                exerciseName = exerciseName.trim().replace("\\s+".toRegex(), " "),
                 weight = weight,
                 reps = reps,
                 setNumber = setNumber
@@ -66,7 +66,7 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
     fun getExerciseNamesByType(workoutType: String): Flow<List<String>> {
         return repository.getExerciseNamesByType(workoutType).map { names ->
             names.map { name ->
-                name.lowercase().split(" ").joinToString(" ") { word ->
+                name.lowercase().trim().split("\\s+".toRegex()).joinToString(" ") { word ->
                     word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                 }
             }.distinct()

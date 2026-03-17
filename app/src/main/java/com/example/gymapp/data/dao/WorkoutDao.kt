@@ -51,7 +51,7 @@ interface WorkoutDao {
     fun getPreviousWorkoutEntriesByType(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>>
 
     @Query("""
-        SELECT DISTINCT LOWER(exerciseName) 
+        SELECT DISTINCT TRIM(LOWER(exerciseName))
         FROM exercise_entries 
         INNER JOIN workout_sessions ON exercise_entries.sessionId = workout_sessions.id
         WHERE workout_sessions.type = :workoutType
