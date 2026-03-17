@@ -23,6 +23,7 @@ This document summarizes the architecture, key implementation details, and lesso
 - **Double-Collapsible History**: In the Active Workout view, the "Last time" section is collapsible. Inside, exercises are also collapsible.
 - **Persistent Inputs**: Weight and Reps fields persist after adding a set.
 - **Unified Scrolling**: Active Workout screen uses `verticalScroll` on a `Column` to avoid nested scroll issues.
+- **Edit Mode**: Long-press on a log entry to reveal delete buttons for all entries in the current session. Tapping anywhere outside the log entries dismisses Edit Mode.
 
 ### 4. Smart Autocomplete
 - **Contextual Suggestions**: Exercise suggestions are filtered by the current `workoutType` (e.g., Legs only shows Legs exercises).

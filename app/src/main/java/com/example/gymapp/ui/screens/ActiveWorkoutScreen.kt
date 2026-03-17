@@ -2,19 +2,28 @@ package com.example.gymapp.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
@@ -54,7 +63,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ActiveWorkoutScreen(
     workoutType: String,
@@ -69,8 +78,11 @@ fun ActiveWorkoutScreen(
     var lastTimeExpanded by remember { mutableStateOf(false) }
     var activeSessionId by remember { mutableStateOf<Long?>(null) }
     var expandedAutocomplete by remember { mutableStateOf(false) }
+    var isEditMode by remember { mutableStateOf(false) }
 
-    val historyExerciseNames by viewModel.getExerciseNamesByType(workoutType).collectAsState(initial = emptyList())
+    val historyExerciseNamesFlow = remember(workoutType) { viewModel.getExerciseNamesByType(workoutType) }
+    val historyExerciseNames by historyExerciseNamesFlow.collectAsState(initial = emptyList())
+
     val filteredNames = remember(exerciseName, historyExerciseNames) {
         if (exerciseName.isBlank()) emptyList()
         else historyExerciseNames.filter { it.contains(exerciseName, ignoreCase = true) && it != exerciseName }
@@ -105,6 +117,11 @@ fun ActiveWorkoutScreen(
     val scope = rememberCoroutineScope()
 
     suspend fun performBackAction() {
+        if (isEditMode) {
+            isEditMode = false
+            return
+        }
+
         val wasLastTimeExpanded = lastTimeExpanded
         if (wasLastTimeExpanded) {
             lastTimeExpanded = false
@@ -185,6 +202,12 @@ fun ActiveWorkoutScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    if (isEditMode) isEditMode = false
+                }
         ) {
             Column(
                 modifier = Modifier
@@ -234,7 +257,6 @@ fun ActiveWorkoutScreen(
                         value = exerciseName,
                         onValueChange = {
                             exerciseName = it
-                            // Only expand if the user is actively typing (value is not blank)
                             expandedAutocomplete = it.isNotBlank()
                         },
                         label = { Text("Exercise Name") },
@@ -305,7 +327,6 @@ fun ActiveWorkoutScreen(
 
                 Button(
                     onClick = {
-                        // Explicitly close suggestions when adding a set
                         expandedAutocomplete = false
                         if (exerciseName.isNotBlank() && weight.isNotBlank() && reps.isNotBlank()) {
                             val nextSetNumber = currentEntries.filter { it.exerciseName.equals(exerciseName, ignoreCase = true) }.size + 1
@@ -337,10 +358,38 @@ fun ActiveWorkoutScreen(
                 ) {
                     currentEntries.forEach { entry ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    onLongClick = { isEditMode = true },
+                                    onClick = { if (isEditMode) isEditMode = false }
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = "${entry.exerciseName} (Set ${entry.setNumber})")
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                AnimatedVisibility(
+                                    visible = isEditMode,
+                                    enter = fadeIn() + expandHorizontally(),
+                                    exit = fadeOut() + shrinkHorizontally()
+                                ) {
+                                    IconButton(
+                                        onClick = { viewModel.deleteEntry(entry) },
+                                        modifier = Modifier.size(32.dp).padding(end = 8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete Set",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                                Text(text = "${entry.exerciseName} (Set ${entry.setNumber})")
+                            }
                             Text(text = "${entry.weight} lbs x ${entry.reps}", fontWeight = FontWeight.Bold)
                         }
                     }

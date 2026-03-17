@@ -7,7 +7,6 @@ import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -16,12 +15,8 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
     val recentSessions: Flow<List<WorkoutSession>> = repository.recentSessions
     val allSessions: Flow<List<WorkoutSession>> = repository.allSessions
 
-    private val _currentSessionId = MutableStateFlow<Long?>(null)
-
     suspend fun startSession(type: String): Long {
-        val id = repository.createSession(type)
-        _currentSessionId.value = id
-        return id
+        return repository.createSession(type)
     }
 
     fun addEntry(sessionId: Long, exerciseName: String, weight: Double, reps: Int, setNumber: Int) {
@@ -37,18 +32,23 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         }
     }
 
+    fun deleteEntry(entry: ExerciseEntry) {
+        viewModelScope.launch {
+            repository.deleteExerciseEntry(entry)
+        }
+    }
+
     fun discardCurrentSession(sessionId: Long) {
         viewModelScope.launch {
             val session = repository.getSessionById(sessionId)
             if (session != null) {
                 repository.deleteSession(session)
             }
-            _currentSessionId.value = null
         }
     }
 
     fun finishCurrentSession() {
-        _currentSessionId.value = null
+        // This is a placeholder if we need to do anything when finishing a session
     }
 
     fun getPreviousWorkoutEntries(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>> {

@@ -33,6 +33,7 @@ be sufficiently self-explanatory.
     - Persistent weight/reps inputs for fast multi-set entry.
     - Collapsible "Last Time" view grouped by exercise.
     - **Exercise Autocomplete**: Refined to only suggest exercises from the *current session type* and deduplicate casing issues (e.g., "sQuat" and "SQUAT" both suggest "Squat").
+    - **Edit Mode**: Long-press any set in the current log to enter edit mode and delete accidental entries.
 - **History**: Full scrollable history with expandable session details.
     - **Shared Components**: Refactored `WorkoutSessionCard` for consistent look.
 
@@ -49,7 +50,7 @@ be sufficiently self-explanatory.
 
 ### 1. Enhanced Customization
 - **Persistent Custom Workout Types**: Currently, custom workouts are session-based. Future update will allow saving them to the dashboard.
-- **Edit/Delete History**: Allow users to correct mistakes in past sessions or delete specific entries.
+- **Edit/Delete History**: Allow users to correct mistakes in past sessions or delete specific entries in the history screen.
 
 ### 2. Analytics & Progress
 - **Progress Charts**: Visual graphs showing weight/volume increase over time.

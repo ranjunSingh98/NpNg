@@ -20,6 +20,9 @@ interface WorkoutDao {
     @Delete
     suspend fun deleteSession(session: WorkoutSession)
 
+    @Delete
+    suspend fun deleteExerciseEntry(entry: ExerciseEntry)
+
     @Query("SELECT * FROM workout_sessions WHERE id = :sessionId")
     suspend fun getSessionById(sessionId: Long): WorkoutSession?
 

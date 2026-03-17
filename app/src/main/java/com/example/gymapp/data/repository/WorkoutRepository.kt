@@ -18,6 +18,10 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
         workoutDao.insertExerciseEntry(entry)
     }
 
+    suspend fun deleteExerciseEntry(entry: ExerciseEntry) {
+        workoutDao.deleteExerciseEntry(entry)
+    }
+
     suspend fun deleteSession(session: WorkoutSession) {
         workoutDao.deleteSession(session)
     }
