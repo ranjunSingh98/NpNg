@@ -112,13 +112,14 @@ fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
+                .padding(top = innerPadding.calculateTopPadding())
+                .padding(bottom = innerPadding.calculateBottomPadding())
+                .padding(horizontal = 16.dp)
         ) {
             Text(
                 text = "NpNg",
                 style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
             )
 
             Column(

@@ -1,6 +1,8 @@
 package com.example.gymapp.ui.theme
 
 import android.app.Activity
+import android.os.Build
+import android.view.WindowManager
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -16,23 +18,21 @@ private val DarkColorScheme = darkColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     onBackground = OnBackground,
-    secondary = SecondaryText // Using secondary for secondary text as it's a common pattern
+    secondary = SecondaryText
 )
 
 private val LightColorScheme = lightColorScheme(
-    // Default Material 3 light colors, can be customized later if needed
     primary = Primary,
     onPrimary = OnPrimary,
     background = Color(0xFFFFFFFF),
     surface = Color(0xFFFFFFFF),
     onBackground = Color(0xFF1C1B1F),
-    secondary = Color(0xFF6200EE) // Placeholder, can be customized
+    secondary = Color(0xFF6200EE)
 )
 
 @Composable
 fun GymAppTheme(
-    darkTheme: Boolean = true, // Set dark theme as default
-    // Dynamic color is not used by default as per request
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -41,9 +41,18 @@ fun GymAppTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Temporarily comment out the problematic line to resolve compilation error
-            // WindowCompat.setStatusBarColor(window, colorScheme.background.toArgb())
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            
+            // Set light/dark icons according to the theme
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
+            
+            // Allow drawing behind display cutout (notches, hole-punches) 
+            // to maximize screen usage on tall screens like Samsung Galaxy.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                window.attributes.layoutInDisplayCutoutMode = 
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
         }
     }
 
