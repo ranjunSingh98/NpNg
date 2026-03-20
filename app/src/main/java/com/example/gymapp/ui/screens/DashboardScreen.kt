@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -122,11 +123,15 @@ fun DashboardScreen(
                 modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
             )
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
+            // Exercise Categories: Scrollable independently, showing ~4.5 cards
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .heightIn(max = 440.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                WorkoutCategory.categories.forEach { category ->
+                items(WorkoutCategory.categories) { category ->
                     WorkoutCategoryCard(
                         category = category,
                         lastWorkoutDate = lastWorkoutDates[category.name],
@@ -138,6 +143,7 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Recent History section follows immediately
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -152,11 +158,13 @@ fun DashboardScreen(
                 }
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(recentSessions) { session ->
+                recentSessions.forEach { session ->
                     WorkoutSessionCard(session, viewModel)
                 }
             }

@@ -3,10 +3,13 @@ package com.example.gymapp.ui
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.gymapp.R
+import com.example.gymapp.ui.theme.AbsOrange
 import com.example.gymapp.ui.theme.ArmsPurple
 import com.example.gymapp.ui.theme.BackBlue
+import com.example.gymapp.ui.theme.CardioRed
 import com.example.gymapp.ui.theme.ChestYellow
 import com.example.gymapp.ui.theme.LegsGreen
+import com.example.gymapp.ui.theme.ShouldersTeal
 
 data class WorkoutCategory(
     val name: String,
@@ -24,7 +27,10 @@ data class WorkoutCategory(
             WorkoutCategory("Legs", LegsGreen, iconRes = R.drawable.ic_legs),
             WorkoutCategory("Back", BackBlue, iconRes = R.drawable.ic_back),
             WorkoutCategory("Chest", ChestYellow, iconRes = R.drawable.ic_chest),
-            WorkoutCategory("Arms", ArmsPurple, iconRes = R.drawable.ic_arms)
+            WorkoutCategory("Arms", ArmsPurple, iconRes = R.drawable.ic_arms),
+            WorkoutCategory("Shoulders", ShouldersTeal, iconRes = R.drawable.ic_shoulders),
+            WorkoutCategory("Abs", AbsOrange, iconRes = R.drawable.ic_abs),
+            WorkoutCategory("Cardio", CardioRed, iconRes = R.drawable.ic_cardio)
         )
         
         fun getByName(name: String): WorkoutCategory? {

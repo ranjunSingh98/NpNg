@@ -23,5 +23,6 @@ data class ExerciseEntry(
     val exerciseName: String,
     val weight: Double,
     val reps: Int,
-    val setNumber: Int
+    val setNumber: Int,
+    val durationSeconds: Int? = null
 )

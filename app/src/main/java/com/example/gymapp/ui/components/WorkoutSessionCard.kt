@@ -87,11 +87,16 @@ fun WorkoutSessionCard(
             if (expanded) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 if (entries.isEmpty()) {
-                    Text("No exercises recorded.", style = MaterialTheme.typography.bodySmall)
+                    Text("No activities recorded.", style = MaterialTheme.typography.bodySmall)
                 } else {
                     entries.forEach { entry ->
+                        val text = if (entry.durationSeconds != null) {
+                            "${entry.exerciseName}: ${entry.durationSeconds / 60} min"
+                        } else {
+                            "${entry.exerciseName}: ${entry.weight}lbs x ${entry.reps}"
+                        }
                         Text(
-                            text = "${entry.exerciseName}: ${entry.weight}lbs x ${entry.reps}",
+                            text = text,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }

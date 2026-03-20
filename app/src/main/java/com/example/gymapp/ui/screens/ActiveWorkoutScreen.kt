@@ -74,11 +74,14 @@ fun ActiveWorkoutScreen(
     var exerciseName by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
     var reps by remember { mutableStateOf("") }
+    var duration by remember { mutableStateOf("") }
     var showExitDialog by remember { mutableStateOf(false) }
     var lastTimeExpanded by remember { mutableStateOf(false) }
     var activeSessionId by remember { mutableStateOf<Long?>(null) }
     var expandedAutocomplete by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
+
+    val isCardio = workoutType.equals("Cardio", ignoreCase = true)
 
     val historyExerciseNamesFlow = remember(workoutType) { viewModel.getExerciseNamesByType(workoutType) }
     val historyExerciseNames by historyExerciseNamesFlow.collectAsState(initial = emptyList())
@@ -260,7 +263,7 @@ fun ActiveWorkoutScreen(
                             exerciseName = it
                             expandedAutocomplete = it.isNotBlank()
                         },
-                        label = { Text("Exercise Name") },
+                        label = { Text(if (isCardio) "Activity" else "Exercise Name") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true),
@@ -292,44 +295,61 @@ fun ActiveWorkoutScreen(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                if (isCardio) {
                     OutlinedTextField(
-                        value = weight,
-                        onValueChange = { weight = it },
-                        label = { Text("Weight (lbs)") },
-                        modifier = Modifier.weight(1f),
+                        value = duration,
+                        onValueChange = { duration = it },
+                        label = { Text("Duration (min)") },
+                        modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        trailingIcon = if (weight.isNotBlank()) {
+                        trailingIcon = if (duration.isNotBlank()) {
                             {
-                                IconButton(onClick = { weight = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear Weight")
+                                IconButton(onClick = { duration = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear Duration")
                                 }
                             }
                         } else null
                     )
-                    OutlinedTextField(
-                        value = reps,
-                        onValueChange = { reps = it },
-                        label = { Text("Reps") },
-                        modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        trailingIcon = if (reps.isNotBlank()) {
-                            {
-                                IconButton(onClick = { reps = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear Reps")
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = weight,
+                            onValueChange = { weight = it },
+                            label = { Text("Weight (lbs)") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            trailingIcon = if (weight.isNotBlank()) {
+                                {
+                                    IconButton(onClick = { weight = "" }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Clear Weight")
+                                    }
                                 }
-                            }
-                        } else null
-                    )
+                            } else null
+                        )
+                        OutlinedTextField(
+                            value = reps,
+                            onValueChange = { reps = it },
+                            label = { Text("Reps") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            trailingIcon = if (reps.isNotBlank()) {
+                                {
+                                    IconButton(onClick = { reps = "" }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Clear Reps")
+                                    }
+                                }
+                            } else null
+                        )
+                    }
                 }
 
                 Button(
                     onClick = {
                         expandedAutocomplete = false
-                        if (exerciseName.isNotBlank() && weight.isNotBlank() && reps.isNotBlank()) {
+                        if (exerciseName.isNotBlank() && (isCardio || (weight.isNotBlank() && reps.isNotBlank()))) {
                             val nextSetNumber = currentEntries.filter { it.exerciseName.equals(exerciseName, ignoreCase = true) }.size + 1
                             activeSessionId?.let {
                                 viewModel.addEntry(
@@ -337,14 +357,15 @@ fun ActiveWorkoutScreen(
                                     exerciseName = exerciseName,
                                     weight = weight.toDoubleOrNull() ?: 0.0,
                                     reps = reps.toIntOrNull() ?: 0,
-                                    setNumber = nextSetNumber
+                                    setNumber = nextSetNumber,
+                                    durationSeconds = duration.toIntOrNull()?.times(60)
                                 )
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Add Set")
+                    Text(if (isCardio) "Add Activity" else "Add Set")
                 }
 
                 HorizontalDivider()
@@ -389,9 +410,18 @@ fun ActiveWorkoutScreen(
                                         )
                                     }
                                 }
-                                Text(text = "${entry.exerciseName} (Set ${entry.setNumber})")
+                                if (isCardio) {
+                                    Text(text = entry.exerciseName)
+                                } else {
+                                    Text(text = "${entry.exerciseName} (Set ${entry.setNumber})")
+                                }
                             }
-                            Text(text = "${entry.weight} lbs x ${entry.reps}", fontWeight = FontWeight.Bold)
+                            val durationSeconds = entry.durationSeconds
+                            if (isCardio && durationSeconds != null) {
+                                Text(text = "${durationSeconds / 60} min", fontWeight = FontWeight.Bold)
+                            } else {
+                                Text(text = "${entry.weight} lbs x ${entry.reps}", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -444,10 +474,18 @@ fun CollapsibleExerciseCard(exerciseName: String, entries: List<ExerciseEntry>) 
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(top = 4.dp)) {
                     entries.forEach { entry ->
-                        Text(
-                            text = "Set ${entry.setNumber}: ${entry.weight}lbs x ${entry.reps}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        val durationSeconds = entry.durationSeconds
+                        if (durationSeconds != null) {
+                            Text(
+                                text = "${durationSeconds / 60} min",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        } else {
+                            Text(
+                                text = "Set ${entry.setNumber}: ${entry.weight}lbs x ${entry.reps}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
             }

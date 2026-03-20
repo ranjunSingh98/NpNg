@@ -19,14 +19,22 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
         return repository.createSession(type)
     }
 
-    fun addEntry(sessionId: Long, exerciseName: String, weight: Double, reps: Int, setNumber: Int) {
+    fun addEntry(
+        sessionId: Long,
+        exerciseName: String,
+        weight: Double,
+        reps: Int,
+        setNumber: Int,
+        durationSeconds: Int? = null
+    ) {
         viewModelScope.launch {
             val entry = ExerciseEntry(
                 sessionId = sessionId,
                 exerciseName = exerciseName.trim().replace("\\s+".toRegex(), " "),
                 weight = weight,
                 reps = reps,
-                setNumber = setNumber
+                setNumber = setNumber,
+                durationSeconds = durationSeconds
             )
             repository.addExerciseEntry(entry)
         }
