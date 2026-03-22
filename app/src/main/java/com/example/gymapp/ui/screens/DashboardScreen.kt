@@ -64,6 +64,8 @@ fun DashboardScreen(
     val orderedCategories by viewModel.orderedCategories.collectAsState()
     val lastWorkoutDates = remember { mutableStateMapOf<String, Long?>() }
 
+    val hasSeenUpdate02 by viewModel.hasSeenUpdate02.collectAsState()
+
     // Use a stable SnapshotStateList that doesn't get replaced every time orderedCategories emits.
     val categories = remember {
         mutableStateListOf<WorkoutCategory>().apply { addAll(orderedCategories) }
@@ -82,6 +84,34 @@ fun DashboardScreen(
         orderedCategories.forEach { category ->
             lastWorkoutDates[category.name] = viewModel.getLastWorkoutDate(category.name)
         }
+    }
+
+    if (!hasSeenUpdate02) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissUpdate02() },
+            title = { Text("What's New in v0.2") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("• Drag & Drop: Long-press any workout card to reorder your categories.", style = MaterialTheme.typography.bodyMedium)
+                    Text("• Edit Logs: Long-press any set in an active workout to show delete.", style = MaterialTheme.typography.bodyMedium)
+                    Text("• New Categories: Added Push, Pull, Abs, Shoulder and Cardio support.", style = MaterialTheme.typography.bodyMedium)
+                    Text("• Darker Aesthetic: New black splash screen, refined icons and edge to edge support.", style = MaterialTheme.typography.bodyMedium)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissUpdate02() }) {
+                    Text("Got it!")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    viewModel.seedDatabase()
+                    viewModel.dismissUpdate02()
+                }) {
+                    Text("Load Demo Data")
+                }
+            }
+        )
     }
 
     if (showAddCustomDialog.value) {

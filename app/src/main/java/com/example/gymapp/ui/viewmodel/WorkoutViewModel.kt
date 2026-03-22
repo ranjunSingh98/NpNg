@@ -11,6 +11,7 @@ import com.example.gymapp.ui.WorkoutCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -43,9 +44,46 @@ class WorkoutViewModel(
             initialValue = WorkoutCategory.categories
         )
 
+    val hasSeenUpdate02: StateFlow<Boolean> = userPreferencesRepository.hasSeenUpdate02
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
     fun saveCategoryOrder(categories: List<WorkoutCategory>) {
         viewModelScope.launch {
             userPreferencesRepository.saveCategoryOrder(categories.map { it.name })
+        }
+    }
+
+    fun dismissUpdate02() {
+        viewModelScope.launch {
+            userPreferencesRepository.setHasSeenUpdate02(true)
+        }
+    }
+
+    fun seedDatabase() {
+        viewModelScope.launch {
+            // Only seed if empty
+            val current = allSessions.first()
+            if (current.isNotEmpty()) return@launch
+
+            // 1. Legs Session (Yesterday)
+            val legsId = repository.createSession("Legs")
+            addEntry(legsId, "Squat", 225.0, 5, 1)
+            addEntry(legsId, "Squat", 225.0, 5, 2)
+            addEntry(legsId, "Leg Press", 400.0, 12, 1)
+
+            // 2. Push Session (2 days ago)
+            val pushId = repository.createSession("Push")
+            addEntry(pushId, "Bench Press", 185.0, 8, 1)
+            addEntry(pushId, "Bench Press", 185.0, 8, 2)
+            addEntry(pushId, "Overhead Press", 115.0, 10, 1)
+
+            // 3. Cardio Session (3 days ago)
+            val cardioId = repository.createSession("Cardio")
+            addEntry(cardioId, "Running", 0.0, 0, 1, durationSeconds = 1800)
         }
     }
 
