@@ -28,11 +28,12 @@ fun WorkoutCategoryCard(
     category: WorkoutCategory,
     lastWorkoutDate: Long?,
     dateFormat: SimpleDateFormat,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clickable(onClick = onClick)

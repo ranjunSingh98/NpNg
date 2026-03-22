@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.gymapp.data.WorkoutDatabase
 import com.example.gymapp.data.repository.WorkoutRepository
+import com.example.gymapp.data.repository.UserPreferencesRepository
 import com.example.gymapp.ui.screens.ActiveWorkoutScreen
 import com.example.gymapp.ui.screens.DashboardScreen
 import com.example.gymapp.ui.screens.HistoryScreen
@@ -31,8 +32,11 @@ fun GymAppNavGraph(
 ) {
     val context = LocalContext.current
     val database = WorkoutDatabase.getDatabase(context)
-    val repository = WorkoutRepository(database.workoutDao())
-    val viewModel: WorkoutViewModel = viewModel(factory = WorkoutViewModel.Factory(repository))
+    val workoutRepository = WorkoutRepository(database.workoutDao())
+    val userPreferencesRepository = UserPreferencesRepository(context)
+    val viewModel: WorkoutViewModel = viewModel(
+        factory = WorkoutViewModel.Factory(workoutRepository, userPreferencesRepository)
+    )
 
     NavHost(
         navController = navController,

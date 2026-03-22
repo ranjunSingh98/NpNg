@@ -1,5 +1,7 @@
 package com.example.gymapp.ui.screens
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
@@ -25,17 +28,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.gymapp.ui.WorkoutCategory
 import com.example.gymapp.ui.components.WorkoutCategoryCard
 import com.example.gymapp.ui.components.WorkoutSessionCard
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -48,21 +58,35 @@ fun DashboardScreen(
 ) {
     val recentSessions by viewModel.recentSessions.collectAsState(initial = emptyList())
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    var showAddCustomDialog by remember { mutableStateOf(false) }
+    val showAddCustomDialog = remember { mutableStateOf(false) }
     var customWorkoutName by remember { mutableStateOf("") }
 
+    val orderedCategories by viewModel.orderedCategories.collectAsState()
     val lastWorkoutDates = remember { mutableStateMapOf<String, Long?>() }
 
-    // Fetch last workout dates for each type
-    LaunchedEffect(WorkoutCategory.categories) {
-        WorkoutCategory.categories.forEach { category ->
+    // Use a stable SnapshotStateList that doesn't get replaced every time orderedCategories emits.
+    val categories = remember {
+        mutableStateListOf<WorkoutCategory>().apply { addAll(orderedCategories) }
+    }
+
+    LaunchedEffect(orderedCategories) {
+        val currentNames = categories.map { it.name }
+        val newNames = orderedCategories.map { it.name }
+        if (currentNames != newNames) {
+            categories.clear()
+            categories.addAll(orderedCategories)
+        }
+    }
+
+    LaunchedEffect(orderedCategories) {
+        orderedCategories.forEach { category ->
             lastWorkoutDates[category.name] = viewModel.getLastWorkoutDate(category.name)
         }
     }
 
-    if (showAddCustomDialog) {
+    if (showAddCustomDialog.value) {
         AlertDialog(
-            onDismissRequest = { showAddCustomDialog = false },
+            onDismissRequest = { showAddCustomDialog.value = false },
             title = { Text("Custom Workout") },
             text = {
                 Column {
@@ -82,7 +106,7 @@ fun DashboardScreen(
                     onClick = {
                         if (customWorkoutName.isNotBlank()) {
                             onWorkoutTypeSelected(customWorkoutName)
-                            showAddCustomDialog = false
+                            showAddCustomDialog.value = false
                             customWorkoutName = ""
                         }
                     }
@@ -91,7 +115,7 @@ fun DashboardScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showAddCustomDialog = false }) {
+                TextButton(onClick = { showAddCustomDialog.value = false }) {
                     Text("Cancel")
                 }
             }
@@ -101,7 +125,7 @@ fun DashboardScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddCustomDialog = true },
+                onClick = { showAddCustomDialog.value = true },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
@@ -123,27 +147,54 @@ fun DashboardScreen(
                 modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
             )
 
-            // Exercise Categories: Scrollable independently, showing ~4.5 cards
+            val listState = rememberLazyListState()
+            val haptic = LocalHapticFeedback.current
+
+            val reorderableLazyListState = rememberReorderableLazyListState(listState) { from, to ->
+                categories.add(to.index, categories.removeAt(from.index))
+                viewModel.saveCategoryOrder(categories.toList())
+            }
+
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f, fill = false)
                     .heightIn(max = 440.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(WorkoutCategory.categories) { category ->
-                    WorkoutCategoryCard(
-                        category = category,
-                        lastWorkoutDate = lastWorkoutDates[category.name],
-                        dateFormat = dateFormat,
-                        onClick = { onWorkoutTypeSelected(category.name) }
-                    )
+                items(categories, key = { it.name }) { category ->
+                    ReorderableItem(reorderableLazyListState, key = category.name) { isDragging ->
+                        val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp, label = "elevation")
+                        val scale by animateFloatAsState(if (isDragging) 1.05f else 1f, label = "scale")
+
+                        WorkoutCategoryCard(
+                            category = category,
+                            lastWorkoutDate = lastWorkoutDates[category.name],
+                            dateFormat = dateFormat,
+                            onClick = { onWorkoutTypeSelected(category.name) },
+                            modifier = Modifier
+                                .longPressDraggableHandle(
+                                    onDragStarted = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    },
+                                    onDragStopped = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    }
+                                )
+                                .zIndex(if (isDragging) 1f else 0f)
+                                .graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                    shadowElevation = elevation.toPx()
+                                }
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Recent History section follows immediately
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
