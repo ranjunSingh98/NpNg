@@ -1,6 +1,7 @@
 package com.example.gymapp.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -31,11 +32,15 @@ fun NpNgNavGraph(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val database = WorkoutDatabase.getDatabase(context)
-    val workoutRepository = WorkoutRepository(database.workoutDao())
-    val userPreferencesRepository = UserPreferencesRepository(context)
+    
+    // Ensure repositories and factory are stable across recompositions
     val viewModel: WorkoutViewModel = viewModel(
-        factory = WorkoutViewModel.Factory(workoutRepository, userPreferencesRepository)
+        factory = remember {
+            val database = WorkoutDatabase.getDatabase(context)
+            val workoutRepository = WorkoutRepository(database.workoutDao())
+            val userPreferencesRepository = UserPreferencesRepository(context)
+            WorkoutViewModel.Factory(workoutRepository, userPreferencesRepository)
+        }
     )
 
     NavHost(

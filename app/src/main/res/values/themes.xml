@@ -8,7 +8,8 @@
     <!-- Splash Screen theme for Android 12+ -->
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/black</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_back</item>
+        <!-- Using mipmap icon which is better supported as a starting icon -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/Theme.GymApp</item>
     </style>
 </resources>
