@@ -19,7 +19,6 @@ abstract class WorkoutDatabase : RoomDatabase() {
         fun getDatabase(context: Context): WorkoutDatabase {
             return Instance ?: synchronized(this) {
                 Room.databaseBuilder(context, WorkoutDatabase::class.java, "workout_database")
-                    .fallbackToDestructiveMigration()
                     .build()
                     .also { Instance = it }
             }
