@@ -54,6 +54,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -80,6 +82,11 @@ fun ActiveWorkoutScreen(
     var activeSessionId by remember { mutableStateOf<Long?>(null) }
     var expandedAutocomplete by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
+
+    val exerciseNameFocusRequester = remember { FocusRequester() }
+    val weightFocusRequester = remember { FocusRequester() }
+    val repsFocusRequester = remember { FocusRequester() }
+    val durationFocusRequester = remember { FocusRequester() }
 
     val isCardio = workoutType.equals("Cardio", ignoreCase = true)
 
@@ -266,12 +273,14 @@ fun ActiveWorkoutScreen(
                         label = { Text(if (isCardio) "Activity" else "Exercise Name") },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .focusRequester(exerciseNameFocusRequester)
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true),
                         trailingIcon = if (exerciseName.isNotBlank()) {
                             {
                                 IconButton(onClick = { 
                                     exerciseName = ""
                                     expandedAutocomplete = false
+                                    exerciseNameFocusRequester.requestFocus()
                                 }) {
                                     Icon(Icons.Default.Clear, contentDescription = "Clear")
                                 }
@@ -300,11 +309,16 @@ fun ActiveWorkoutScreen(
                         value = duration,
                         onValueChange = { duration = it },
                         label = { Text("Duration (min)") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(durationFocusRequester),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         trailingIcon = if (duration.isNotBlank()) {
                             {
-                                IconButton(onClick = { duration = "" }) {
+                                IconButton(onClick = { 
+                                    duration = "" 
+                                    durationFocusRequester.requestFocus()
+                                }) {
                                     Icon(Icons.Default.Clear, contentDescription = "Clear Duration")
                                 }
                             }
@@ -319,11 +333,16 @@ fun ActiveWorkoutScreen(
                             value = weight,
                             onValueChange = { weight = it },
                             label = { Text("Weight (lbs)") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .focusRequester(weightFocusRequester),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             trailingIcon = if (weight.isNotBlank()) {
                                 {
-                                    IconButton(onClick = { weight = "" }) {
+                                    IconButton(onClick = { 
+                                        weight = "" 
+                                        weightFocusRequester.requestFocus()
+                                    }) {
                                         Icon(Icons.Default.Clear, contentDescription = "Clear Weight")
                                     }
                                 }
@@ -333,11 +352,16 @@ fun ActiveWorkoutScreen(
                             value = reps,
                             onValueChange = { reps = it },
                             label = { Text("Reps") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .focusRequester(repsFocusRequester),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             trailingIcon = if (reps.isNotBlank()) {
                                 {
-                                    IconButton(onClick = { reps = "" }) {
+                                    IconButton(onClick = { 
+                                        reps = "" 
+                                        repsFocusRequester.requestFocus()
+                                    }) {
                                         Icon(Icons.Default.Clear, contentDescription = "Clear Reps")
                                     }
                                 }
@@ -349,16 +373,22 @@ fun ActiveWorkoutScreen(
                 Button(
                     onClick = {
                         expandedAutocomplete = false
-                        if (exerciseName.isNotBlank() && (isCardio || (weight.isNotBlank() && reps.isNotBlank()))) {
+                        val repsInt = reps.toIntOrNull() ?: 0
+                        val durationInt = duration.toIntOrNull() ?: 0
+                        
+                        if (exerciseName.isNotBlank() && (
+                            (isCardio && durationInt > 0) || 
+                            (!isCardio && weight.isNotBlank() && repsInt > 0)
+                        )) {
                             val nextSetNumber = currentEntries.filter { it.exerciseName.equals(exerciseName, ignoreCase = true) }.size + 1
                             activeSessionId?.let {
                                 viewModel.addEntry(
                                     sessionId = it,
                                     exerciseName = exerciseName,
                                     weight = weight.toDoubleOrNull() ?: 0.0,
-                                    reps = reps.toIntOrNull() ?: 0,
+                                    reps = repsInt,
                                     setNumber = nextSetNumber,
-                                    durationSeconds = duration.toIntOrNull()?.times(60)
+                                    durationSeconds = if (isCardio) durationInt * 60 else null
                                 )
                             }
                         }
