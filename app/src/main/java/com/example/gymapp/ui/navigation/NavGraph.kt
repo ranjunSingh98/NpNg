@@ -26,7 +26,7 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun GymAppNavGraph(
+fun NpNgNavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {

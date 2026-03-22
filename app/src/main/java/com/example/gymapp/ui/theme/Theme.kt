@@ -31,7 +31,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun GymAppTheme(
+fun NpNgTheme(
     darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {

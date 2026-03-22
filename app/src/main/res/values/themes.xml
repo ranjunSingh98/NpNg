@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.GymApp" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Default Splash Screen background (Android 11 and below) -->
+        <item name="android:windowBackground">@color/black</item>
+    </style>
 
-    <style name="Theme.GymApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Splash Screen theme for Android 12+ -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_back</item>
+        <item name="postSplashScreenTheme">@style/Theme.GymApp</item>
+    </style>
 </resources>

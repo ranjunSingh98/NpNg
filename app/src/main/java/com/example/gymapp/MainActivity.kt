@@ -7,14 +7,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
-import com.example.gymapp.ui.navigation.GymAppNavGraph
-import com.example.gymapp.ui.theme.Background
-import com.example.gymapp.ui.theme.GymAppTheme
+import com.example.gymapp.ui.navigation.NpNgNavGraph
+import com.example.gymapp.ui.theme.NpNgTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Install the splash screen before calling super.onCreate()
+        installSplashScreen()
+
         super.onCreate(savedInstanceState)
         
         // Use a more aggressive edge-to-edge configuration that works on tall screens
@@ -29,9 +31,9 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            GymAppTheme {
+            NpNgTheme {
                 val navController = rememberNavController()
-                GymAppNavGraph(
+                NpNgNavGraph(
                     navController = navController,
                     modifier = Modifier.fillMaxSize()
                 )
