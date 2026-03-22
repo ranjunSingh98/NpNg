@@ -44,8 +44,8 @@ fun NpNgTheme(
             val insetsController = WindowCompat.getInsetsController(window, view)
             
             // Set light/dark icons according to the theme
-            insetsController.isAppearanceLightStatusBars = !darkTheme
-            insetsController.isAppearanceLightNavigationBars = !darkTheme
+            insetsController?.isAppearanceLightStatusBars = !darkTheme
+            insetsController?.isAppearanceLightNavigationBars = !darkTheme
             
             // Allow drawing behind display cutout (notches, hole-punches) 
             // to maximize screen usage on tall screens like Samsung Galaxy.

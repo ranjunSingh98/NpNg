@@ -12,6 +12,7 @@ progressive overload correctly.
  - We will keep our code simple and concise and only add documentation where needed, the code should
 be sufficiently self-explanatory.
  - We will adhere to our principle of keeping things lightweight and simple.
+ - **Database Migrations**: We will always provide a manual or `AutoMigration` path when incrementing the database version to prevent user data loss. We will keep `exportSchema = true` enabled for version tracking.
 
 ## Current Implementation Status
 
@@ -19,8 +20,9 @@ be sufficiently self-explanatory.
 - **WorkoutSession**: Tracks session type and timestamp.
 - **ExerciseEntry**: Tracks specific sets with weight, reps, and exercise name.
 - **Cascading Deletes**: Discarding a session removes all associated entries.
-- **Database Versioning**: Incremented database version to 2 for schema changes.
+- **Database Versioning**: Incremented database version to 3 for schema changes.
 - **Previous Workout Retrieval**: Refined query to accurately show the preceding workout of the same type.
+- **Migration Path (2 to 3)**: Implemented manual migration to add `durationSeconds` to `exercise_entries`.
 
 ### 2. User Flow & UI Screens - [DONE]
 - **Dashboard**:
