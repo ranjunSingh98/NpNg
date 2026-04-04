@@ -17,7 +17,8 @@ data class WorkoutCategory(
     val name: String,
     val accentColor: Color,
     val iconRes: Int? = null,
-    val imageVector: ImageVector? = null
+    val imageVector: ImageVector? = null,
+    val tintIcon: Boolean = true
 ) {
     init {
         require(iconRes != null || imageVector != null) {
@@ -32,7 +33,7 @@ data class WorkoutCategory(
             WorkoutCategory("Chest", ChestYellow, iconRes = R.drawable.ic_chest),
             WorkoutCategory("Arms", ArmsPurple, iconRes = R.drawable.ic_arms),
             WorkoutCategory("Shoulders", ShouldersTeal, iconRes = R.drawable.ic_shoulders),
-            WorkoutCategory("Push", PushCyan, iconRes = R.drawable.ic_push),
+            WorkoutCategory("Push", PushCyan, iconRes = R.mipmap.push, tintIcon = false),
             WorkoutCategory("Pull", PullLime, iconRes = R.drawable.ic_pull),
             WorkoutCategory("Abs", AbsOrange, iconRes = R.drawable.ic_abs),
             WorkoutCategory("Cardio", CardioRed, iconRes = R.drawable.ic_cardio)

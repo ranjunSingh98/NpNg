@@ -33,9 +33,9 @@ class WorkoutViewModel(
                     .let { ordered ->
                         // Add any categories that aren't in the saved order yet
                         val missing = WorkoutCategory.categories.filter { cat ->
-                            !ordered.any { it.name == cat.name }
+                            !ordered.any { it.name.equals(cat.name, ignoreCase = true) }
                         }
-                        ordered + missing
+                        (ordered + missing).distinctBy { it.name.lowercase() }
                     }
             }
         }.stateIn(
