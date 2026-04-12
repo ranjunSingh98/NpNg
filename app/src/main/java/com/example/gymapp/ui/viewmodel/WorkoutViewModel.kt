@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.model.ExerciseEntry
+import com.example.gymapp.data.model.GymAppData
 import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.data.repository.UserPreferencesRepository
 import com.example.gymapp.data.repository.WorkoutRepository
@@ -15,6 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class WorkoutViewModel(
     private val repository: WorkoutRepository,
@@ -23,6 +26,24 @@ class WorkoutViewModel(
 
     val recentSessions: Flow<List<WorkoutSession>> = repository.recentSessions
     val allSessions: Flow<List<WorkoutSession>> = repository.allSessions
+
+    suspend fun exportDataToJson(): String {
+        val (sessions, entries) = repository.getAllData()
+        val data = GymAppData(version = 3, sessions = sessions, entries = entries)
+        return Json.encodeToString(data)
+    }
+
+    fun importDataFromJson(jsonString: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val data = Json.decodeFromString<GymAppData>(jsonString)
+                repository.restoreData(data.sessions, data.entries)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
+    }
 
     val orderedCategories: StateFlow<List<WorkoutCategory>> = userPreferencesRepository.categoryOrder
         .map { order ->
@@ -44,7 +65,7 @@ class WorkoutViewModel(
             initialValue = WorkoutCategory.categories
         )
 
-    val hasSeenUpdate02: StateFlow<Boolean> = userPreferencesRepository.hasSeenUpdate02
+    val hasSeenUpdate03: StateFlow<Boolean> = userPreferencesRepository.hasSeenUpdate03
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -57,9 +78,9 @@ class WorkoutViewModel(
         }
     }
 
-    fun dismissUpdate02() {
+    fun dismissUpdate03() {
         viewModelScope.launch {
-            userPreferencesRepository.setHasSeenUpdate02(true)
+            userPreferencesRepository.setHasSeenUpdate03(true)
         }
     }
 

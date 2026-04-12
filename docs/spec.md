@@ -14,6 +14,33 @@ be sufficiently self-explanatory.
  - We will adhere to our principle of keeping things lightweight and simple.
  - **Database Migrations**: We will always provide a manual or `AutoMigration` path when incrementing the database version to prevent user data loss. We will keep `exportSchema = true` enabled for version tracking.
 
+## Style & Architectural Guidelines
+
+### UI/UX Standards
+- **Design System**: Strict adherence to **Material 3**.
+- **Corner Radius**: Standardized `16.dp` rounded corners for all cards, dialogs, and menus.
+- **Layout Spacing**:
+    - Screen-level padding: `16.dp`.
+    - Item spacing in lists: `8.dp` or `10.dp`.
+- **Typography**:
+    - Main titles: `headlineLarge`.
+    - Card headers: `titleMedium` with `FontWeight.Bold`.
+    - Metadata/Secondary info: `bodySmall` with `onSurfaceVariant` color.
+- **Interactions**:
+    - Use Haptic feedback for long-press actions (e.g., reordering).
+    - Favor `AnimatedVisibility` for appearing/disappearing UI elements.
+- **Edge-to-Edge**: Always handle system bars using `Scaffold` and `WindowInsets`.
+
+### Architecture & Data
+- **Pattern**: Clean **MVVM** with a Repository layer.
+- **State**: Reactively expose data via `Flow` or `StateFlow` from Repository -> ViewModel -> UI.
+- **Persistence**: Room for workout data; DataStore for simple user preferences.
+- **Data Integrity**: 
+    - Use `ForeignKey.CASCADE` to ensure entries are removed with their sessions.
+    - All non-trivial DB/IO operations must run in `viewModelScope`.
+- **Serialization**: Use `kotlinx.serialization` for JSON-based data portability.
+- **App Updates**: When adding significant features, update the "What's New" dialog text and increment the app version. Clear old update notes to keep the message focused on the latest changes.
+
 ## Current Implementation Status
 
 ### 1. Data Architecture (Room Database) - [DONE]
@@ -65,9 +92,15 @@ be sufficiently self-explanatory.
 ### 4. Polish
 - **Dark/Light Mode**: Full Material 3 theme support.
 
+### 5. Data Safety (New)
+- **JSON Export/Import**: Robust backup and restore mechanism to prevent data loss during updates or device changes.
+    - **Export**: Generates a JSON file containing all workout sessions and exercise entries.
+    - **Import**: Allows restoring from a JSON file. *Note: Importing will wipe the current database to ensure consistency.*
+    - **UI**: Accessible via a dropdown menu in the top right of the Dashboard/History screens.
 
 //TODO
-1. Edit/Delete History entries.
-2. Persistent Custom Workout Types (save to DB).
-3. Rest Timer.
-4. Unit Selection (lbs/kg).
+1. JSON Export/Import functionality.
+2. Edit/Delete History entries.
+3. Persistent Custom Workout Types (save to DB).
+4. Rest Timer.
+5. Unit Selection (lbs/kg).

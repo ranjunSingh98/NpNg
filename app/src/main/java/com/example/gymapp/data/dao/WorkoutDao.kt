@@ -15,10 +15,22 @@ interface WorkoutDao {
     suspend fun insertSession(session: WorkoutSession): Long
 
     @Insert
+    suspend fun insertSessions(sessions: List<WorkoutSession>)
+
+    @Insert
+    suspend fun insertExerciseEntries(entries: List<ExerciseEntry>)
+
+    @Insert
     suspend fun insertExerciseEntry(entry: ExerciseEntry)
 
     @Delete
     suspend fun deleteSession(session: WorkoutSession)
+
+    @Query("DELETE FROM workout_sessions")
+    suspend fun deleteAllSessions()
+
+    @Query("DELETE FROM exercise_entries")
+    suspend fun deleteAllEntries()
 
     @Delete
     suspend fun deleteExerciseEntry(entry: ExerciseEntry)
@@ -31,6 +43,12 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workout_sessions ORDER BY timestamp DESC")
     fun getAllSessions(): Flow<List<WorkoutSession>>
+
+    @Query("SELECT * FROM workout_sessions")
+    suspend fun getAllSessionsList(): List<WorkoutSession>
+
+    @Query("SELECT * FROM exercise_entries")
+    suspend fun getAllEntriesList(): List<ExerciseEntry>
 
     @Query("SELECT * FROM exercise_entries WHERE sessionId = :sessionId ORDER BY id ASC")
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>>

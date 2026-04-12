@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "exercise_entries",
@@ -17,6 +18,7 @@ import androidx.room.PrimaryKey
     ],
     indices = [Index(value = ["sessionId"])]
 )
+@Serializable
 data class ExerciseEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val sessionId: Long,

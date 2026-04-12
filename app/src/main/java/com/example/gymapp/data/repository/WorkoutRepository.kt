@@ -9,6 +9,19 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
     val recentSessions: Flow<List<WorkoutSession>> = workoutDao.getRecentSessions()
     val allSessions: Flow<List<WorkoutSession>> = workoutDao.getAllSessions()
 
+    suspend fun getAllData(): Pair<List<WorkoutSession>, List<ExerciseEntry>> {
+        val sessions = workoutDao.getAllSessionsList()
+        val entries = workoutDao.getAllEntriesList()
+        return Pair(sessions, entries)
+    }
+
+    suspend fun restoreData(sessions: List<WorkoutSession>, entries: List<ExerciseEntry>) {
+        workoutDao.deleteAllEntries()
+        workoutDao.deleteAllSessions()
+        workoutDao.insertSessions(sessions)
+        workoutDao.insertExerciseEntries(entries)
+    }
+
     suspend fun createSession(type: String): Long {
         val session = WorkoutSession(type = type)
         return workoutDao.insertSession(session)
