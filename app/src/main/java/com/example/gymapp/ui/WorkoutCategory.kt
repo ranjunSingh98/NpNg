@@ -33,7 +33,7 @@ data class WorkoutCategory(
             WorkoutCategory("Chest", ChestYellow, iconRes = R.drawable.ic_chest),
             WorkoutCategory("Arms", ArmsPurple, iconRes = R.drawable.ic_arms),
             WorkoutCategory("Shoulders", ShouldersTeal, iconRes = R.drawable.ic_shoulders),
-            WorkoutCategory("Push", PushCyan, iconRes = R.mipmap.push, tintIcon = false),
+            WorkoutCategory("Push", PushCyan, iconRes = R.drawable.ic_push),
             WorkoutCategory("Pull", PullLime, iconRes = R.drawable.ic_pull),
             WorkoutCategory("Abs", AbsOrange, iconRes = R.drawable.ic_abs),
             WorkoutCategory("Cardio", CardioRed, iconRes = R.drawable.ic_cardio)

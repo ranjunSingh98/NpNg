@@ -76,7 +76,8 @@ fun WorkoutSessionCard(
                     Text(
                         text = session.type,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = category?.accentColor ?: MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Text(
