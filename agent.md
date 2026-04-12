@@ -33,10 +33,21 @@ This document summarizes the architecture, key implementation details, and lesso
 
 ## Technical Lessons Learned
 
+### UI & UX
+- **Material 3 Surface Tinting**: Avoid hardcoding `.background(color)` inside Material 3 containers like `ElevatedCard`. M3 cards apply elevation-based tints; adding a background to a child (even if it matches the theme surface color) can cause visible color "blocks" or mismatches.
+- **Corner Consistency**: Standardize on `RoundedCornerShape(16.dp)` for all interactive elements (cards, menus, dialogs) to maintain a cohesive brand feel.
+- **User-Facing Strings**: Use descriptive actions like "Import Data" instead of "Import JSON" to hide technical implementation details from the user.
+- **Readable Filenames**: For backups, use `SimpleDateFormat("M_d_yy")` to create intuitive filenames like `gymapp_backup_4_12_26.json`.
+
 ### Build & Lint Fixes
 - **Room Ordering**: `ORDER BY id ASC` is the most reliable for chronological logging.
 - **Autocomplete**: Use `ExposedDropdownMenuBox` with `ExposedDropdownMenuAnchorType.PrimaryEditable`.
 - **Data Flow**: Use `LOWER()` in SQL and `.distinct()` in Kotlin to clean up user-entered strings for UI suggestions.
+
+### Data & Serialization
+- **Kotlinx Serialization**: When using `@Serializable` on Room entities, ensure the serialization plugin is added to both the project and app-level Gradle files.
+- **File Handling**: Use `ActivityResultContracts.CreateDocument` and `OpenDocument` with the `application/json` MIME type for robust file access without requiring legacy storage permissions.
+- **Atomic Restore**: When importing, wrap the "delete all" and "insert all" operations in a single repository call to ensure the UI doesn't see a partially empty state.
 
 ## Data Schema
 - **WorkoutSession**: `id`, `type`, `timestamp`.

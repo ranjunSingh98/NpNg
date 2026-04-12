@@ -75,6 +75,13 @@ be sufficiently self-explanatory.
 ### 5. Dependency Updates - [DONE]
 - All project dependencies updated to latest stable.
 
+### 5. Data Safety (JSON Backup) - [DONE]
+- **JSON Export/Import**: Robust backup and restore mechanism.
+    - **Implementation**: Uses `kotlinx.serialization` to package `WorkoutSession` and `ExerciseEntry` data.
+    - **Export**: User-friendly filenames (`gymapp_backup_M_D_YY.json`) via `ActivityResultContracts.CreateDocument`.
+    - **Import**: Full database restore (wipe then load) via `ActivityResultContracts.OpenDocument`.
+    - **UI**: Integrated into the `TopAppBar` via a 3-dot overflow menu with `16.dp` rounded corners.
+
 ## Future Roadmap (Planned Features)
 
 ### 1. Enhanced Customization
@@ -92,15 +99,9 @@ be sufficiently self-explanatory.
 ### 4. Polish
 - **Dark/Light Mode**: Full Material 3 theme support.
 
-### 5. Data Safety (New)
-- **JSON Export/Import**: Robust backup and restore mechanism to prevent data loss during updates or device changes.
-    - **Export**: Generates a JSON file containing all workout sessions and exercise entries.
-    - **Import**: Allows restoring from a JSON file. *Note: Importing will wipe the current database to ensure consistency.*
-    - **UI**: Accessible via a dropdown menu in the top right of the Dashboard/History screens.
 
 //TODO
-1. JSON Export/Import functionality.
-2. Edit/Delete History entries.
-3. Persistent Custom Workout Types (save to DB).
-4. Rest Timer.
-5. Unit Selection (lbs/kg).
+1. Edit/Delete History entries.
+2. Persistent Custom Workout Types (save to DB).
+3. Rest Timer.
+4. Unit Selection (lbs/kg).
