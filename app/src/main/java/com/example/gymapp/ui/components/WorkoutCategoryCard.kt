@@ -1,6 +1,5 @@
 package com.example.gymapp.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,8 +41,7 @@ fun WorkoutCategoryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp)
-                .background(MaterialTheme.colorScheme.surface),
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {

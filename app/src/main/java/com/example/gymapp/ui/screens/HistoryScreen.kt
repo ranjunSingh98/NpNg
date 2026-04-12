@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import com.example.gymapp.ui.components.WorkoutSessionCard
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,7 +116,8 @@ fun HistoryScreen(
                                 text = { Text("Export Data") },
                                 onClick = {
                                     showMenu = false
-                                    exportLauncher.launch("gymapp_backup_${System.currentTimeMillis()}.json")
+                                    val fileNameDate = SimpleDateFormat("M_d_yy", Locale.getDefault()).format(Date())
+                                    exportLauncher.launch("gymapp_backup_$fileNameDate.json")
                                 }
                             )
                             DropdownMenuItem(

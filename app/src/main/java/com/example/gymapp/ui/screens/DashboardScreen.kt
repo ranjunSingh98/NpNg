@@ -62,6 +62,7 @@ import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -234,7 +235,8 @@ fun DashboardScreen(
                                 text = { Text("Export Data") },
                                 onClick = {
                                     showMenu = false
-                                    exportLauncher.launch("gymapp_backup_${System.currentTimeMillis()}.json")
+                                    val fileNameDate = SimpleDateFormat("M_d_yy", Locale.getDefault()).format(Date())
+                                    exportLauncher.launch("gymapp_backup_$fileNameDate.json")
                                 }
                             )
                             DropdownMenuItem(
