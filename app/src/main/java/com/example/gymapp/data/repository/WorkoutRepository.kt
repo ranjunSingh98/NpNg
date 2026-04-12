@@ -27,6 +27,11 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
         return workoutDao.insertSession(session)
     }
 
+    suspend fun createSessionWithTimestamp(type: String, timestamp: Long): Long {
+        val session = WorkoutSession(type = type, timestamp = timestamp)
+        return workoutDao.insertSession(session)
+    }
+
     suspend fun addExerciseEntry(entry: ExerciseEntry) {
         workoutDao.insertExerciseEntry(entry)
     }

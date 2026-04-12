@@ -99,9 +99,27 @@ be sufficiently self-explanatory.
 ### 4. Polish
 - **Dark/Light Mode**: Full Material 3 theme support.
 
+### 5. Data Safety (JSON Backup) - [DONE]
+- **JSON Export/Import**: Robust backup and restore mechanism.
+    - **Implementation**: Uses `kotlinx.serialization` to package `WorkoutSession` and `ExerciseEntry` data.
+    - **Export**: User-friendly filenames (`gymapp_backup_M_D_YY.json`) via `ActivityResultContracts.CreateDocument`.
+    - **Import**: Full database restore (wipe then load) via `ActivityResultContracts.OpenDocument`.
+    - **UI**: Integrated into the `TopAppBar` via a 3-dot overflow menu with `16.dp` rounded corners.
+
+### 6. Data Insights (New)
+- **Workout Heatmap**: A compact, GitHub-style contribution grid showing workout frequency.
+    - **Visuals**: 7 rows (days) by ~5 columns (weeks) grid of small rounded blocks.
+    - **Color**: Primary color for active days, subtle surface color for rest days.
+    - **Layout**: High-density design that fits our Material 3 dark theme.
+    - **Phased Rollout**:
+        1. Navigation and Insights screen entry point.
+        2. Monthly heatmap component.
+        3. Statistical summaries (streaks, totals).
 
 //TODO
-1. Edit/Delete History entries.
-2. Persistent Custom Workout Types (save to DB).
-3. Rest Timer.
-4. Unit Selection (lbs/kg).
+1. Data Insights: Navigation & Screen setup.
+2. Data Insights: Monthly Heatmap component.
+3. Edit/Delete History entries.
+4. Persistent Custom Workout Types (save to DB).
+5. Rest Timer.
+6. Unit Selection (lbs/kg).

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.GymAppData
 import com.example.gymapp.data.model.WorkoutSession
+import com.example.gymapp.data.model.WorkoutStats
 import com.example.gymapp.data.repository.UserPreferencesRepository
 import com.example.gymapp.data.repository.WorkoutRepository
 import com.example.gymapp.ui.WorkoutCategory
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.Calendar
 
 class WorkoutViewModel(
     private val repository: WorkoutRepository,
@@ -26,6 +28,25 @@ class WorkoutViewModel(
 
     val recentSessions: Flow<List<WorkoutSession>> = repository.recentSessions
     val allSessions: Flow<List<WorkoutSession>> = repository.allSessions
+
+    val workoutDaysByMonth: StateFlow<Map<String, Set<Int>>> = allSessions
+        .map { sessions ->
+            val map = mutableMapOf<String, MutableSet<Int>>()
+            val cal = Calendar.getInstance()
+            sessions.forEach { session ->
+                cal.timeInMillis = session.timestamp
+                val year = cal.get(Calendar.YEAR)
+                val month = cal.get(Calendar.MONTH) // 0-indexed
+                val day = cal.get(Calendar.DAY_OF_MONTH)
+                val key = "$year-$month"
+                map.getOrPut(key) { mutableSetOf() }.add(day)
+            }
+            map
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
 
     suspend fun exportDataToJson(): String {
         val (sessions, entries) = repository.getAllData()
@@ -90,21 +111,20 @@ class WorkoutViewModel(
             val current = allSessions.first()
             if (current.isNotEmpty()) return@launch
 
-            // 1. Legs Session (Yesterday)
-            val legsId = repository.createSession("Legs")
-            addEntry(legsId, "Squat", 225.0, 5, 1)
-            addEntry(legsId, "Squat", 225.0, 5, 2)
-            addEntry(legsId, "Leg Press", 400.0, 12, 1)
-
-            // 2. Push Session (2 days ago)
-            val pushId = repository.createSession("Push")
-            addEntry(pushId, "Bench Press", 185.0, 8, 1)
-            addEntry(pushId, "Bench Press", 185.0, 8, 2)
-            addEntry(pushId, "Overhead Press", 115.0, 10, 1)
-
-            // 3. Cardio Session (3 days ago)
-            val cardioId = repository.createSession("Cardio")
-            addEntry(cardioId, "Running", 0.0, 0, 1, durationSeconds = 1800)
+            val cal = Calendar.getInstance()
+            
+            // Generate some random workout days for the last 3 months
+            val workoutTypes = listOf("Legs", "Push", "Pull", "Shoulders")
+            
+            for (i in 0 until 90) { // Last 90 days
+                // ~40% chance of workout
+                if ((0..100).random() < 40) {
+                    val timestamp = cal.timeInMillis
+                    val type = workoutTypes.random()
+                    repository.createSessionWithTimestamp(type, timestamp)
+                }
+                cal.add(Calendar.DAY_OF_YEAR, -1)
+            }
         }
     }
 

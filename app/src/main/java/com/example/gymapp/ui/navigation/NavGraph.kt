@@ -15,6 +15,7 @@ import com.example.gymapp.data.repository.UserPreferencesRepository
 import com.example.gymapp.ui.screens.ActiveWorkoutScreen
 import com.example.gymapp.ui.screens.DashboardScreen
 import com.example.gymapp.ui.screens.HistoryScreen
+import com.example.gymapp.ui.screens.InsightsScreen
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import androidx.compose.ui.platform.LocalContext
 
@@ -24,6 +25,7 @@ sealed class Screen(val route: String) {
         fun createRoute(workoutType: String) = "active_workout/$workoutType"
     }
     object History : Screen("history")
+    object Insights : Screen("insights")
 }
 
 @Composable
@@ -56,6 +58,9 @@ fun NpNgNavGraph(
                 },
                 onViewHistory = {
                     navController.navigate(Screen.History.route)
+                },
+                onViewInsights = {
+                    navController.navigate(Screen.Insights.route)
                 }
             )
         }
@@ -74,6 +79,12 @@ fun NpNgNavGraph(
         }
         composable(Screen.History.route) {
             HistoryScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Insights.route) {
+            InsightsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
