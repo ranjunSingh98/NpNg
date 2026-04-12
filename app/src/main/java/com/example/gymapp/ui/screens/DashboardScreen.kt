@@ -157,7 +157,8 @@ fun DashboardScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("• Data Portability: You can now export and import your workout history from the top-right menu.", style = MaterialTheme.typography.bodyMedium)
-                    Text("• Safety: Prevent data loss during app updates by keeping a manual backup of your progress.", style = MaterialTheme.typography.bodyMedium)
+                    Text("• Several UI and theme fixes, like better icons", style = MaterialTheme.typography.bodyMedium)
+                    Text("• Checkout the new insights section which let's you understand yor activity and share", style = MaterialTheme.typography.bodyMedium)
                 }
             },
             confirmButton = {
