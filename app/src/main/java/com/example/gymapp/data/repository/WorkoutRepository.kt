@@ -27,11 +27,6 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
         return workoutDao.insertSession(session)
     }
 
-    suspend fun createSessionWithTimestamp(type: String, timestamp: Long): Long {
-        val session = WorkoutSession(type = type, timestamp = timestamp)
-        return workoutDao.insertSession(session)
-    }
-
     suspend fun addExerciseEntry(entry: ExerciseEntry) {
         workoutDao.insertExerciseEntry(entry)
     }
@@ -46,6 +41,10 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
 
     suspend fun getSessionById(id: Long): WorkoutSession? {
         return workoutDao.getSessionById(id)
+    }
+
+    fun getPreviousSessionByType(type: String, excludeSessionId: Long): Flow<WorkoutSession?> {
+        return workoutDao.getPreviousSessionByType(type, excludeSessionId)
     }
 
     fun getPreviousWorkoutEntriesByType(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>> {

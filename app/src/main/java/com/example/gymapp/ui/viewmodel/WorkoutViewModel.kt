@@ -6,14 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.GymAppData
 import com.example.gymapp.data.model.WorkoutSession
-import com.example.gymapp.data.model.WorkoutStats
 import com.example.gymapp.data.repository.UserPreferencesRepository
 import com.example.gymapp.data.repository.WorkoutRepository
 import com.example.gymapp.ui.WorkoutCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -105,29 +103,6 @@ class WorkoutViewModel(
         }
     }
 
-    fun seedDatabase() {
-        viewModelScope.launch {
-            // Only seed if empty
-            val current = allSessions.first()
-            if (current.isNotEmpty()) return@launch
-
-            val cal = Calendar.getInstance()
-            
-            // Generate some random workout days for the last 3 months
-            val workoutTypes = listOf("Legs", "Push", "Pull", "Shoulders")
-            
-            for (i in 0 until 90) { // Last 90 days
-                // ~40% chance of workout
-                if ((0..100).random() < 40) {
-                    val timestamp = cal.timeInMillis
-                    val type = workoutTypes.random()
-                    repository.createSessionWithTimestamp(type, timestamp)
-                }
-                cal.add(Calendar.DAY_OF_YEAR, -1)
-            }
-        }
-    }
-
     suspend fun startSession(type: String): Long {
         return repository.createSession(type)
     }
@@ -170,6 +145,10 @@ class WorkoutViewModel(
 
     fun finishCurrentSession() {
         // This is a placeholder if we need to do anything when finishing a session
+    }
+
+    fun getPreviousSession(type: String, excludeSessionId: Long): Flow<WorkoutSession?> {
+        return repository.getPreviousSessionByType(type, excludeSessionId)
     }
 
     fun getPreviousWorkoutEntries(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>> {

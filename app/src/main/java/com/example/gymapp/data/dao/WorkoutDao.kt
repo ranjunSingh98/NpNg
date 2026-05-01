@@ -56,6 +56,13 @@ interface WorkoutDao {
     @Query("SELECT timestamp FROM workout_sessions WHERE type = :workoutType ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastWorkoutTimestampByType(workoutType: String): Long?
 
+    @Query("""
+        SELECT * FROM workout_sessions 
+        WHERE type = :type AND id != :excludeSessionId
+        ORDER BY timestamp DESC LIMIT 1
+    """)
+    fun getPreviousSessionByType(type: String, excludeSessionId: Long): Flow<WorkoutSession?>
+
     @Transaction
     @Query("""
         SELECT * FROM exercise_entries 

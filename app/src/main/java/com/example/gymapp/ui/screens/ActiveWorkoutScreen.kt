@@ -6,18 +6,21 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -40,6 +43,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -54,6 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
@@ -64,6 +69,9 @@ import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -104,6 +112,14 @@ fun ActiveWorkoutScreen(
         activeSessionId = newSessionId
     }
 
+    val previousSession by remember(workoutType, activeSessionId) {
+        if (activeSessionId != null) {
+            viewModel.getPreviousSession(workoutType, activeSessionId!!)
+        } else {
+            flowOf(null)
+        }
+    }.collectAsState(initial = null)
+
     // Collect last workout entries based on activeSessionId
     val lastWorkoutEntries by remember(workoutType, activeSessionId) {
         if (activeSessionId != null) {
@@ -133,20 +149,20 @@ fun ActiveWorkoutScreen(
             return
         }
 
-        val wasLastTimeExpanded = lastTimeExpanded
-        if (wasLastTimeExpanded) {
+        val delayNeeded = lastTimeExpanded
+        if (delayNeeded) {
             lastTimeExpanded = false
         }
 
         if (currentEntries.isEmpty()) {
             activeSessionId?.let { viewModel.discardCurrentSession(it) }
-            if (wasLastTimeExpanded) {
+            if (delayNeeded) {
                 delay(300)
             }
             onBack()
         } else {
             showExitDialog = true
-            if (wasLastTimeExpanded) {
+            if (delayNeeded) {
                 delay(300)
             }
         }
@@ -228,20 +244,33 @@ fun ActiveWorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (lastWorkoutEntries.isNotEmpty()) {
+                    val lastWorkoutDateFormat = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
                                 .clickable { lastTimeExpanded = !lastTimeExpanded }
-                                .padding(vertical = 4.dp),
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = "Last time:",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Last time",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                previousSession?.let { session ->
+                                    Text(
+                                        text = lastWorkoutDateFormat.format(Date(session.timestamp)),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
+                                }
+                            }
                             Icon(
                                 imageVector = if (lastTimeExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                                 contentDescription = if (lastTimeExpanded) "Collapse History" else "Expand History",
@@ -412,11 +441,12 @@ fun ActiveWorkoutScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
                                 .combinedClickable(
                                     onLongClick = { isEditMode = true },
                                     onClick = { if (isEditMode) isEditMode = false }
                                 )
-                                .padding(vertical = 4.dp),
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -479,45 +509,60 @@ fun ActiveWorkoutScreen(
 
 @Composable
 fun CollapsibleExerciseCard(exerciseName: String, entries: List<ExerciseEntry>) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(true) }
+    val shape = RoundedCornerShape(12.dp)
     Card(
+        shape = shape,
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+        ),
         modifier = Modifier
             .fillMaxWidth()
+            .clip(shape)
             .clickable { expanded = !expanded }
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = exerciseName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (expanded) "Collapse" else "Expand"
-                )
-            }
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 4.dp)) {
-                    entries.forEach { entry ->
-                        val durationSeconds = entry.durationSeconds
-                        if (durationSeconds != null) {
-                            Text(
-                                text = "${durationSeconds / 60} min",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        } else {
-                            Text(
-                                text = "Set ${entry.setNumber}: ${entry.weight}lbs x ${entry.reps}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+        FlowRow(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = exerciseName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            if (expanded) {
+                entries.forEach { entry ->
+                    val durationSeconds = entry.durationSeconds
+                    val text = if (durationSeconds != null) {
+                        "${durationSeconds / 60}m"
+                    } else {
+                        val weightStr = if (entry.weight % 1.0 == 0.0) entry.weight.toInt().toString() else entry.weight.toString()
+                        "${weightStr}lb×${entry.reps}"
+                    }
+                    
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+                        )
                     }
                 }
+            } else {
+                Text(
+                    text = "${entries.size} sets",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(start = 4.dp)
+                )
             }
         }
     }

@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,11 +32,13 @@ fun WorkoutCategoryCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val shape = RoundedCornerShape(16.dp)
     ElevatedCard(
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .clip(shape)
             .clickable(onClick = onClick)
     ) {
         Row(
