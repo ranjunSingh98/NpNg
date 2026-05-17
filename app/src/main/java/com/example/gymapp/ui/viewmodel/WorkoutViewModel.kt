@@ -147,12 +147,12 @@ class WorkoutViewModel(
         // This is a placeholder if we need to do anything when finishing a session
     }
 
-    fun getPreviousSession(type: String, excludeSessionId: Long): Flow<WorkoutSession?> {
-        return repository.getPreviousSessionByType(type, excludeSessionId)
+    fun getPreviousSession(type: String, currentSessionId: Long): Flow<WorkoutSession?> {
+        return repository.getPreviousSessionBefore(type, currentSessionId)
     }
 
-    fun getPreviousWorkoutEntries(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>> {
-        return repository.getPreviousWorkoutEntriesByType(type, excludeSessionId)
+    fun getPreviousWorkoutEntries(type: String, currentSessionId: Long): Flow<List<ExerciseEntry>> {
+        return repository.getEntriesFromSessionBefore(type, currentSessionId)
     }
 
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {

@@ -58,22 +58,22 @@ interface WorkoutDao {
 
     @Query("""
         SELECT * FROM workout_sessions 
-        WHERE type = :type AND id != :excludeSessionId
+        WHERE type = :type AND timestamp < (SELECT timestamp FROM workout_sessions WHERE id = :currentSessionId)
         ORDER BY timestamp DESC LIMIT 1
     """)
-    fun getPreviousSessionByType(type: String, excludeSessionId: Long): Flow<WorkoutSession?>
+    fun getPreviousSessionBefore(type: String, currentSessionId: Long): Flow<WorkoutSession?>
 
     @Transaction
     @Query("""
         SELECT * FROM exercise_entries 
         WHERE sessionId = (
             SELECT id FROM workout_sessions 
-            WHERE type = :type AND id != :excludeSessionId
+            WHERE type = :type AND timestamp < (SELECT timestamp FROM workout_sessions WHERE id = :currentSessionId)
             ORDER BY timestamp DESC LIMIT 1
         )
         ORDER BY id ASC
     """)
-    fun getPreviousWorkoutEntriesByType(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>>
+    fun getEntriesFromSessionBefore(type: String, currentSessionId: Long): Flow<List<ExerciseEntry>>
 
     @Query("""
         SELECT DISTINCT TRIM(LOWER(exerciseName))

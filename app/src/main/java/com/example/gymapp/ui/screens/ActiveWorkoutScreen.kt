@@ -79,7 +79,8 @@ fun ActiveWorkoutScreen(
     workoutType: String,
     viewModel: WorkoutViewModel,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialSessionId: Long? = null,
 ) {
     var exerciseName by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
@@ -87,9 +88,10 @@ fun ActiveWorkoutScreen(
     var duration by remember { mutableStateOf("") }
     var showExitDialog by remember { mutableStateOf(false) }
     var lastTimeExpanded by remember { mutableStateOf(false) }
-    var activeSessionId by remember { mutableStateOf<Long?>(null) }
+    var activeSessionId by remember { mutableStateOf<Long?>(initialSessionId) }
     var expandedAutocomplete by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
+    var isBackActionProcessing by remember { mutableStateOf(false) }
 
     val exerciseNameFocusRequester = remember { FocusRequester() }
     val weightFocusRequester = remember { FocusRequester() }
@@ -107,9 +109,11 @@ fun ActiveWorkoutScreen(
         else historyExerciseNames.filter { it.contains(normalizedQuery, ignoreCase = true) && it != normalizedQuery }
     }
 
-    LaunchedEffect(workoutType) {
-        val newSessionId = viewModel.startSession(workoutType)
-        activeSessionId = newSessionId
+    LaunchedEffect(workoutType, initialSessionId) {
+        if (activeSessionId == null) {
+            val newSessionId = viewModel.startSession(workoutType)
+            activeSessionId = newSessionId
+        }
     }
 
     val previousSession by remember(workoutType, activeSessionId) {
@@ -144,10 +148,14 @@ fun ActiveWorkoutScreen(
     val scope = rememberCoroutineScope()
 
     suspend fun performBackAction() {
+        if (isBackActionProcessing) return
+        
         if (isEditMode) {
             isEditMode = false
             return
         }
+
+        isBackActionProcessing = true
 
         val delayNeeded = lastTimeExpanded
         if (delayNeeded) {
@@ -165,6 +173,8 @@ fun ActiveWorkoutScreen(
             if (delayNeeded) {
                 delay(300)
             }
+            // Reset if we're showing a dialog and not actually navigating back yet
+            isBackActionProcessing = false
         }
     }
 
@@ -176,7 +186,10 @@ fun ActiveWorkoutScreen(
 
     if (showExitDialog) {
         AlertDialog(
-            onDismissRequest = { showExitDialog = false },
+            onDismissRequest = { 
+                showExitDialog = false
+                isBackActionProcessing = false
+            },
             title = { Text("Finish Workout?") },
             text = { Text("Do you want to save this workout or discard it?") },
             confirmButton = {
@@ -489,6 +502,8 @@ fun ActiveWorkoutScreen(
 
             Button(
                 onClick = {
+                    if (isBackActionProcessing) return@Button
+                    isBackActionProcessing = true
                     if (currentEntries.isEmpty()) {
                         activeSessionId?.let { viewModel.discardCurrentSession(it) }
                     } else {

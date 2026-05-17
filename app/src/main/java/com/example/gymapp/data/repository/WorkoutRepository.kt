@@ -43,12 +43,12 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
         return workoutDao.getSessionById(id)
     }
 
-    fun getPreviousSessionByType(type: String, excludeSessionId: Long): Flow<WorkoutSession?> {
-        return workoutDao.getPreviousSessionByType(type, excludeSessionId)
+    fun getPreviousSessionBefore(type: String, currentSessionId: Long): Flow<WorkoutSession?> {
+        return workoutDao.getPreviousSessionBefore(type, currentSessionId)
     }
 
-    fun getPreviousWorkoutEntriesByType(type: String, excludeSessionId: Long): Flow<List<ExerciseEntry>> {
-        return workoutDao.getPreviousWorkoutEntriesByType(type, excludeSessionId)
+    fun getEntriesFromSessionBefore(type: String, currentSessionId: Long): Flow<List<ExerciseEntry>> {
+        return workoutDao.getEntriesFromSessionBefore(type, currentSessionId)
     }
 
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {

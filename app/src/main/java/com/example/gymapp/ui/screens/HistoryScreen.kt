@@ -45,6 +45,7 @@ import java.util.Locale
 fun HistoryScreen(
     viewModel: WorkoutViewModel,
     onBack: () -> Unit,
+    onWorkoutSelected: (String, Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -147,7 +148,11 @@ fun HistoryScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(allSessions) { session ->
-                WorkoutSessionCard(session, viewModel)
+                WorkoutSessionCard(
+                    session = session,
+                    viewModel = viewModel,
+                    onResumeSession = { onWorkoutSelected(it.type, it.id) }
+                )
             }
         }
     }

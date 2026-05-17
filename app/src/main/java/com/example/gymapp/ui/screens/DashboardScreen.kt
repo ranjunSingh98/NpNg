@@ -70,7 +70,7 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     viewModel: WorkoutViewModel,
-    onWorkoutTypeSelected: (String) -> Unit,
+    onWorkoutSelected: (String, Long?) -> Unit,
     onViewHistory: () -> Unit,
     onViewInsights: () -> Unit,
     modifier: Modifier = Modifier
@@ -82,6 +82,8 @@ fun DashboardScreen(
     val showAddCustomDialog = remember { mutableStateOf(false) }
     var customWorkoutName by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
+    
+    // ... (rest of the code remains the same, just update onWorkoutTypeSelected calls)
 
     val orderedCategories by viewModel.orderedCategories.collectAsState()
     val lastWorkoutDates = remember { mutableStateMapOf<String, Long?>() }
@@ -165,14 +167,6 @@ fun DashboardScreen(
                 TextButton(onClick = { viewModel.dismissUpdate03() }) {
                     Text("Got it!")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { 
-                    viewModel.seedDatabase()
-                    viewModel.dismissUpdate03()
-                }) {
-                    Text("Load Demo Data")
-                }
             }
         )
     }
@@ -198,7 +192,7 @@ fun DashboardScreen(
                 TextButton(
                     onClick = {
                         if (customWorkoutName.isNotBlank()) {
-                            onWorkoutTypeSelected(customWorkoutName)
+                            onWorkoutSelected(customWorkoutName, null)
                             showAddCustomDialog.value = false
                             customWorkoutName = ""
                         }
@@ -304,7 +298,7 @@ fun DashboardScreen(
                             category = category,
                             lastWorkoutDate = lastWorkoutDates[category.name],
                             dateFormat = dateFormat,
-                            onClick = { onWorkoutTypeSelected(category.name) },
+                            onClick = { onWorkoutSelected(category.name, null) },
                             modifier = Modifier
                                 .longPressDraggableHandle(
                                     onDragStarted = {
@@ -348,7 +342,11 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 recentSessions.forEach { session ->
-                    WorkoutSessionCard(session, viewModel)
+                    WorkoutSessionCard(
+                        session = session,
+                        viewModel = viewModel,
+                        onResumeSession = { onWorkoutSelected(it.type, it.id) }
+                    )
                 }
             }
         }

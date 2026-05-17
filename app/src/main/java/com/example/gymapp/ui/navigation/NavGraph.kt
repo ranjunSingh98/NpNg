@@ -21,8 +21,9 @@ import androidx.compose.ui.platform.LocalContext
 
 sealed class Screen(val route: String) {
     object Dashboard : Screen("dashboard")
-    object ActiveWorkout : Screen("active_workout/{workoutType}") {
-        fun createRoute(workoutType: String) = "active_workout/$workoutType"
+    object ActiveWorkout : Screen("active_workout/{workoutType}?sessionId={sessionId}") {
+        fun createRoute(workoutType: String, sessionId: Long? = null) =
+            "active_workout/$workoutType" + (sessionId?.let { "?sessionId=$it" } ?: "")
     }
     object History : Screen("history")
     object Insights : Screen("insights")
@@ -53,8 +54,8 @@ fun NpNgNavGraph(
         composable(Screen.Dashboard.route) {
             DashboardScreen(
                 viewModel = viewModel,
-                onWorkoutTypeSelected = { workoutType ->
-                    navController.navigate(Screen.ActiveWorkout.createRoute(workoutType))
+                onWorkoutSelected = { workoutType, sessionId ->
+                    navController.navigate(Screen.ActiveWorkout.createRoute(workoutType, sessionId))
                 },
                 onViewHistory = {
                     navController.navigate(Screen.History.route)
@@ -66,21 +67,33 @@ fun NpNgNavGraph(
         }
         composable(
             route = Screen.ActiveWorkout.route,
-            arguments = listOf(navArgument("workoutType") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("workoutType") { type = NavType.StringType },
+                navArgument("sessionId") { 
+                    type = NavType.LongType
+                    defaultValue = -1L 
+                }
+            )
         ) { backStackEntry ->
             val workoutType = backStackEntry.arguments?.getString("workoutType") ?: ""
+            val sessionId = backStackEntry.arguments?.getLong("sessionId").takeIf { it != -1L }
+            
             ActiveWorkoutScreen(
                 workoutType = workoutType,
                 viewModel = viewModel,
                 onBack = {
                     navController.popBackStack()
-                }
+                },
+                initialSessionId = sessionId
             )
         }
         composable(Screen.History.route) {
             HistoryScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onWorkoutSelected = { workoutType, sessionId ->
+                    navController.navigate(Screen.ActiveWorkout.createRoute(workoutType, sessionId))
+                }
             )
         }
         composable(Screen.Insights.route) {
