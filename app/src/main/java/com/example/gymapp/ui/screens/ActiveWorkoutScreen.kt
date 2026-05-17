@@ -185,30 +185,57 @@ fun ActiveWorkoutScreen(
     }
 
     if (showExitDialog) {
+        val isResumed = initialSessionId != null
         AlertDialog(
             onDismissRequest = { 
                 showExitDialog = false
                 isBackActionProcessing = false
             },
-            title = { Text("Finish Workout?") },
-            text = { Text("Do you want to save this workout or discard it?") },
+            title = { Text(if (isResumed) "Exit Workout?" else "Finish Workout?") },
+            text = { 
+                Text(
+                    if (isResumed) "Would you like to save your changes before exiting?" 
+                    else "Do you want to save this workout or discard it?"
+                ) 
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.finishCurrentSession()
-                    onBack()
-                }) {
-                    Text("Save")
+                TextButton(
+                    onClick = {
+                        viewModel.finishCurrentSession()
+                        onBack()
+                    }
+                ) {
+                    Text(if (isResumed) "Save" else "Save and Exit")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        activeSessionId?.let { viewModel.discardCurrentSession(it) }
-                        onBack()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Discard")
+                    TextButton(
+                        onClick = { 
+                            showExitDialog = false
+                            isBackActionProcessing = false 
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                    if (isResumed) {
+                        TextButton(onClick = { onBack() }) {
+                            Text("Don't Save")
+                        }
+                    } else {
+                        TextButton(
+                            onClick = {
+                                activeSessionId?.let { viewModel.discardCurrentSession(it) }
+                                onBack()
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("Discard")
+                        }
+                    }
                 }
             }
         )

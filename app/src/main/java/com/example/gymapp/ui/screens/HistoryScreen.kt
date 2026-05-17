@@ -147,7 +147,7 @@ fun HistoryScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(allSessions) { session ->
+            items(allSessions, key = { it.id }) { session ->
                 WorkoutSessionCard(
                     session = session,
                     viewModel = viewModel,

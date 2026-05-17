@@ -134,15 +134,17 @@ fun DashboardScreen(
 
     // Use a stable SnapshotStateList that doesn't get replaced every time orderedCategories emits.
     val categories = remember {
-        mutableStateListOf<WorkoutCategory>().apply { addAll(orderedCategories) }
+        mutableStateListOf<WorkoutCategory>()
     }
 
     LaunchedEffect(orderedCategories) {
-        val currentNames = categories.map { it.name }
-        val newNames = orderedCategories.map { it.name }
-        if (currentNames != newNames) {
-            categories.clear()
-            categories.addAll(orderedCategories)
+        if (orderedCategories.isNotEmpty()) {
+            val currentNames = categories.map { it.name }
+            val newNames = orderedCategories.map { it.name }
+            if (currentNames != newNames) {
+                categories.clear()
+                categories.addAll(orderedCategories)
+            }
         }
     }
 

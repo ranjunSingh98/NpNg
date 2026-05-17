@@ -81,7 +81,7 @@ class WorkoutViewModel(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = WorkoutCategory.categories
+            initialValue = emptyList()
         )
 
     val hasSeenUpdate03: StateFlow<Boolean> = userPreferencesRepository.hasSeenUpdate03
