@@ -27,6 +27,19 @@ class WorkoutViewModel(
     val recentSessions: Flow<List<WorkoutSession>> = repository.recentSessions
     val allSessions: Flow<List<WorkoutSession>> = repository.allSessions
 
+    val lastWorkoutDatesByType: StateFlow<Map<String, Long>> = allSessions
+        .map { sessions ->
+            sessions
+                .groupBy { it.type }
+                .mapValues { (_, groupedSessions) ->
+                    groupedSessions.maxOf { it.timestamp }
+                }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
+
     val workoutDaysByMonth: StateFlow<Map<String, Set<Int>>> = allSessions
         .map { sessions ->
             val map = mutableMapOf<String, MutableSet<Int>>()
@@ -45,6 +58,81 @@ class WorkoutViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
         )
+
+    val workoutStatsByMonth: StateFlow<Map<String, Map<Int, List<String>>>> = allSessions
+        .map { sessions ->
+            val map = mutableMapOf<String, MutableMap<Int, MutableList<String>>>()
+            val cal = Calendar.getInstance()
+            sessions.forEach { session ->
+                cal.timeInMillis = session.timestamp
+                val year = cal.get(Calendar.YEAR)
+                val month = cal.get(Calendar.MONTH) // 0-indexed
+                val day = cal.get(Calendar.DAY_OF_MONTH)
+                val key = "$year-$month"
+                val monthMap = map.getOrPut(key) { mutableMapOf() }
+                val dayList = monthMap.getOrPut(day) { mutableListOf() }
+                if (!dayList.contains(session.type)) {
+                    dayList.add(session.type)
+                }
+            }
+            map
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
+
+    fun seedData() {
+        viewModelScope.launch {
+            val sessions = mutableListOf<WorkoutSession>()
+            val entries = mutableListOf<ExerciseEntry>()
+            val cal = Calendar.getInstance()
+            val categories = WorkoutCategory.categories.map { it.name }
+            
+            // Start from today and go back 60 days
+            for (i in 0 until 60) {
+                // 70% chance of workout
+                if (Math.random() < 0.7) {
+                    // 30% chance of multiple workouts
+                    val workoutCount = if (Math.random() < 0.3) 2 else 1
+                    
+                    val usedCategories = mutableSetOf<String>()
+                    repeat(workoutCount) {
+                        var type: String
+                        do {
+                            type = categories.random()
+                        } while (usedCategories.contains(type))
+                        usedCategories.add(type)
+                        
+                        val sessionId = (sessions.size + 1).toLong()
+                        sessions.add(WorkoutSession(id = sessionId, type = type, timestamp = cal.timeInMillis))
+                        
+                        // Add 2-3 exercises
+                        repeat((2..3).random()) { exIdx ->
+                            val exName = when(type) {
+                                "Legs" -> listOf("Squat", "Leg Press", "Lunge").random()
+                                "Chest" -> listOf("Bench Press", "Incline Fly", "Dips").random()
+                                "Back" -> listOf("Pull Ups", "Deadlift", "Rows").random()
+                                else -> "Exercise $exIdx"
+                            }
+                            // Add 3 sets per exercise
+                            repeat(3) { setNum ->
+                                entries.add(ExerciseEntry(
+                                    sessionId = sessionId,
+                                    exerciseName = exName,
+                                    weight = (50..200).random().toDouble(),
+                                    reps = (8..12).random(),
+                                    setNumber = setNum + 1
+                                ))
+                            }
+                        }
+                    }
+                }
+                cal.add(Calendar.DAY_OF_YEAR, -1)
+            }
+            repository.restoreData(sessions, entries)
+        }
+    }
 
     suspend fun exportDataToJson(): String {
         val (sessions, entries) = repository.getAllData()
@@ -145,6 +233,16 @@ class WorkoutViewModel(
 
     fun finishCurrentSession() {
         // This is a placeholder if we need to do anything when finishing a session
+    }
+
+    suspend fun getSessionEntriesSnapshot(sessionId: Long): List<ExerciseEntry> {
+        return repository.getEntriesForSessionSnapshot(sessionId)
+    }
+
+    fun restoreSessionEntries(sessionId: Long, entries: List<ExerciseEntry>) {
+        viewModelScope.launch {
+            repository.restoreSessionEntries(sessionId, entries)
+        }
     }
 
     fun getPreviousSession(type: String, currentSessionId: Long): Flow<WorkoutSession?> {

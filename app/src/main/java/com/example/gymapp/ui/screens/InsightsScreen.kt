@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,20 +34,28 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.example.gymapp.ui.WorkoutCategory
 import com.example.gymapp.ui.components.WorkoutHeatmap
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.launch
@@ -62,10 +72,11 @@ fun InsightsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val workoutDaysByMonth by viewModel.workoutDaysByMonth.collectAsState()
-    val scope = rememberCoroutineScope()
+    val workoutStatsByMonth by viewModel.workoutStatsByMonth.collectAsState()
+    var highlightedWorkoutType by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val graphicsLayer = rememberGraphicsLayer()
+    val scope = rememberCoroutineScope()
     
     // Create a list of 24 months ending with the current month
     val months = remember {
@@ -197,7 +208,7 @@ fun InsightsScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) { page ->
                         val (year, month) = months[page]
-                        val workoutDays = workoutDaysByMonth["$year-$month"] ?: emptySet()
+                        val workoutStats = workoutStatsByMonth["$year-$month"] ?: emptyMap()
                         
                         Box(modifier = Modifier
                             .drawWithContent {
@@ -208,9 +219,10 @@ fun InsightsScreen(
                             }
                         ) {
                             WorkoutHeatmap(
-                                workoutDays = workoutDays,
+                                workoutStats = workoutStats,
                                 year = year,
                                 month = month,
+                                highlightedWorkoutType = highlightedWorkoutType,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                         }
@@ -220,6 +232,34 @@ fun InsightsScreen(
 
             val allSessions by viewModel.allSessions.collectAsState(initial = emptyList())
             val currentMonthData = months[pagerState.currentPage]
+            val availableWorkoutTypes = remember(currentMonthData, workoutStatsByMonth) {
+                val monthKey = "${currentMonthData.first}-${currentMonthData.second}"
+                val presentTypes = workoutStatsByMonth[monthKey]
+                    ?.values
+                    ?.flatten()
+                    ?.distinct()
+                    .orEmpty()
+
+                val categoryOrder = WorkoutCategory.categories.map { it.name }
+                val knownTypes = categoryOrder.filter { ordered ->
+                    presentTypes.any { it.equals(ordered, ignoreCase = true) }
+                }
+                val customTypes = presentTypes
+                    .filterNot { type ->
+                        knownTypes.any { it.equals(type, ignoreCase = true) }
+                    }
+                    .sorted()
+
+                knownTypes + customTypes
+            }
+
+            LaunchedEffect(availableWorkoutTypes) {
+                if (highlightedWorkoutType != null &&
+                    availableWorkoutTypes.none { it.equals(highlightedWorkoutType, ignoreCase = true) }
+                ) {
+                    highlightedWorkoutType = null
+                }
+            }
             
             val monthStats = remember(allSessions, currentMonthData) {
                 val year = currentMonthData.first
@@ -253,7 +293,69 @@ fun InsightsScreen(
                     (workoutDays.toDouble() / (totalDaysInCalculation.toDouble() / 7.0))
                 } else 0.0
                 
-                Triple(allSessions.size, workoutDays, avgPerWeek)
+                Triple(monthSessions.size, workoutDays, avgPerWeek)
+            }
+
+            if (availableWorkoutTypes.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Heatmap Focus",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = if (highlightedWorkoutType == null) {
+                                    "Showing all workout days"
+                                } else {
+                                    "Highlighting $highlightedWorkoutType"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            FocusCircleButton(
+                                label = "All",
+                                selected = highlightedWorkoutType == null,
+                                accentColor = MaterialTheme.colorScheme.primary,
+                                onClick = { highlightedWorkoutType = null }
+                            )
+                            availableWorkoutTypes.forEach { workoutType ->
+                                val category = WorkoutCategory.getByName(workoutType)
+                                FocusCircleButton(
+                                    label = workoutType.take(2).uppercase(),
+                                    selected = highlightedWorkoutType == workoutType,
+                                    accentColor = category?.accentColor ?: MaterialTheme.colorScheme.primary,
+                                    iconRes = category?.iconRes,
+                                    onClick = { highlightedWorkoutType = workoutType }
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             Row(
@@ -279,6 +381,47 @@ fun InsightsScreen(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun FocusCircleButton(
+    label: String,
+    selected: Boolean,
+    accentColor: Color,
+    onClick: () -> Unit,
+    iconRes: Int? = null
+) {
+    Surface(
+        modifier = Modifier
+            .size(42.dp)
+            .clip(RoundedCornerShape(21.dp)),
+        shape = RoundedCornerShape(21.dp),
+        color = if (selected) {
+            accentColor.copy(alpha = 0.22f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f)
+        },
+        tonalElevation = if (selected) 2.dp else 0.dp,
+        onClick = onClick
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (iconRes != null) {
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = label,
+                    tint = if (selected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            } else {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

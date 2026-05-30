@@ -42,7 +42,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,7 +85,7 @@ fun DashboardScreen(
     // ... (rest of the code remains the same, just update onWorkoutTypeSelected calls)
 
     val orderedCategories by viewModel.orderedCategories.collectAsState()
-    val lastWorkoutDates = remember { mutableStateMapOf<String, Long?>() }
+    val lastWorkoutDatesByType by viewModel.lastWorkoutDatesByType.collectAsState()
 
     val hasSeenUpdate03 by viewModel.hasSeenUpdate03.collectAsState()
 
@@ -145,12 +144,6 @@ fun DashboardScreen(
                 categories.clear()
                 categories.addAll(orderedCategories)
             }
-        }
-    }
-
-    LaunchedEffect(orderedCategories) {
-        orderedCategories.forEach { category ->
-            lastWorkoutDates[category.name] = viewModel.getLastWorkoutDate(category.name)
         }
     }
 
@@ -298,7 +291,7 @@ fun DashboardScreen(
 
                         WorkoutCategoryCard(
                             category = category,
-                            lastWorkoutDate = lastWorkoutDates[category.name],
+                            lastWorkoutDate = lastWorkoutDatesByType[category.name],
                             dateFormat = dateFormat,
                             onClick = { onWorkoutSelected(category.name, null) },
                             modifier = Modifier

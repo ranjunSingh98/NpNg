@@ -16,10 +16,7 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
     }
 
     suspend fun restoreData(sessions: List<WorkoutSession>, entries: List<ExerciseEntry>) {
-        workoutDao.deleteAllEntries()
-        workoutDao.deleteAllSessions()
-        workoutDao.insertSessions(sessions)
-        workoutDao.insertExerciseEntries(entries)
+        workoutDao.restoreAllData(sessions, entries)
     }
 
     suspend fun createSession(type: String): Long {
@@ -53,6 +50,14 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
 
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {
         return workoutDao.getEntriesForSession(sessionId)
+    }
+
+    suspend fun getEntriesForSessionSnapshot(sessionId: Long): List<ExerciseEntry> {
+        return workoutDao.getEntriesForSessionList(sessionId)
+    }
+
+    suspend fun restoreSessionEntries(sessionId: Long, entries: List<ExerciseEntry>) {
+        workoutDao.restoreSessionEntries(sessionId, entries)
     }
 
     suspend fun getLastWorkoutTimestampByType(workoutType: String): Long? {

@@ -1,6 +1,7 @@
 package com.example.gymapp.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -24,13 +24,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.gymapp.ui.WorkoutCategory
 import java.util.Calendar
 
 @Composable
 fun WorkoutHeatmap(
-    workoutDays: Set<Int>, // Days of the month (1-31)
+    workoutStats: Map<Int, List<String>>, // Day -> List of workout types
     year: Int,
     month: Int,
+    highlightedWorkoutType: String? = null,
     modifier: Modifier = Modifier
 ) {
     val calendar = remember(year, month) {
@@ -92,10 +94,11 @@ fun WorkoutHeatmap(
                             modifier = Modifier.weight(1f)
                         ) {
                             if (dayOfMonth in 1..daysInMonth) {
-                                val isActive = workoutDays.contains(dayOfMonth)
+                                val workouts = workoutStats[dayOfMonth] ?: emptyList()
                                 HeatmapBlock(
                                     day = dayOfMonth,
-                                    isActive = isActive
+                                    workouts = workouts,
+                                    highlightedWorkoutType = highlightedWorkoutType
                                 )
                             } else {
                                 // Empty spacer for days outside the month
@@ -110,32 +113,92 @@ fun WorkoutHeatmap(
 }
 
 @Composable
-private fun HeatmapBlock(day: Int, isActive: Boolean) {
-    val backgroundColor = if (isActive) {
-        MaterialTheme.colorScheme.primary
+private fun HeatmapBlock(
+    day: Int,
+    workouts: List<String>,
+    highlightedWorkoutType: String?
+) {
+    val isActive = workouts.isNotEmpty()
+    val activityLevel = workouts.size.coerceAtMost(3)
+    val highlightColor = highlightedWorkoutType
+        ?.let(WorkoutCategory::getByName)
+        ?.accentColor
+        ?: MaterialTheme.colorScheme.primary
+    val matchesHighlight = highlightedWorkoutType != null &&
+        workouts.any { it.equals(highlightedWorkoutType, ignoreCase = true) }
+
+    val backgroundColor = if (!isActive) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f)
+    } else if (highlightedWorkoutType != null) {
+        if (matchesHighlight) {
+            highlightColor.copy(alpha = 0.28f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f)
+        }
     } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+        when (activityLevel) {
+            1 -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.60f)
+            2 -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.82f)
+            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)
+        }
     }
 
     val textColor = if (isActive) {
-        MaterialTheme.colorScheme.onPrimary
+        if (matchesHighlight) {
+            highlightColor
+        } else {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        }
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    }
+
+    val borderColor = when {
+        matchesHighlight -> highlightColor.copy(alpha = 0.75f)
+        isActive && highlightedWorkoutType != null -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f)
+        else -> Color.Transparent
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(8.dp))
+            .border(width = 0.75.dp, color = borderColor, shape = RoundedCornerShape(8.dp))
             .background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = day.toString(),
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-            color = textColor,
-            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 10.sp,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+            ),
+            color = textColor
         )
+
+        if (isActive) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 3.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                workouts.take(activityLevel).forEach { workoutType ->
+                    val categoryColor = WorkoutCategory.getByName(workoutType)?.accentColor
+                    val dotColor = when {
+                        highlightedWorkoutType == null -> categoryColor ?: MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
+                        matchesHighlight -> categoryColor ?: highlightColor.copy(alpha = 0.95f)
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(2.5.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(dotColor)
+                    )
+                }
+            }
+        }
     }
 }

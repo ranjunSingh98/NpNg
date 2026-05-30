@@ -53,6 +53,12 @@ interface WorkoutDao {
     @Query("SELECT * FROM exercise_entries WHERE sessionId = :sessionId ORDER BY id ASC")
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>>
 
+    @Query("SELECT * FROM exercise_entries WHERE sessionId = :sessionId ORDER BY id ASC")
+    suspend fun getEntriesForSessionList(sessionId: Long): List<ExerciseEntry>
+
+    @Query("DELETE FROM exercise_entries WHERE sessionId = :sessionId")
+    suspend fun deleteEntriesForSession(sessionId: Long)
+
     @Query("SELECT timestamp FROM workout_sessions WHERE type = :workoutType ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastWorkoutTimestampByType(workoutType: String): Long?
 
@@ -83,4 +89,18 @@ interface WorkoutDao {
         ORDER BY exerciseName ASC
     """)
     fun getExerciseNamesByType(workoutType: String): Flow<List<String>>
+
+    @Transaction
+    suspend fun restoreAllData(sessions: List<WorkoutSession>, entries: List<ExerciseEntry>) {
+        deleteAllEntries()
+        deleteAllSessions()
+        insertSessions(sessions)
+        insertExerciseEntries(entries)
+    }
+
+    @Transaction
+    suspend fun restoreSessionEntries(sessionId: Long, entries: List<ExerciseEntry>) {
+        deleteEntriesForSession(sessionId)
+        insertExerciseEntries(entries)
+    }
 }

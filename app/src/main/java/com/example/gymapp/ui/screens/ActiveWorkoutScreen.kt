@@ -92,6 +92,7 @@ fun ActiveWorkoutScreen(
     var expandedAutocomplete by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
     var isBackActionProcessing by remember { mutableStateOf(false) }
+    var originalResumedEntries by remember(initialSessionId) { mutableStateOf<List<ExerciseEntry>?>(null) }
 
     val exerciseNameFocusRequester = remember { FocusRequester() }
     val weightFocusRequester = remember { FocusRequester() }
@@ -113,6 +114,12 @@ fun ActiveWorkoutScreen(
         if (activeSessionId == null) {
             val newSessionId = viewModel.startSession(workoutType)
             activeSessionId = newSessionId
+        }
+    }
+
+    LaunchedEffect(initialSessionId) {
+        if (initialSessionId != null && originalResumedEntries == null) {
+            originalResumedEntries = viewModel.getSessionEntriesSnapshot(initialSessionId)
         }
     }
 
@@ -222,7 +229,15 @@ fun ActiveWorkoutScreen(
                         Text("Cancel")
                     }
                     if (isResumed) {
-                        TextButton(onClick = { onBack() }) {
+                        TextButton(
+                            onClick = {
+                                val originalEntries = originalResumedEntries
+                                if (originalEntries != null) {
+                                    viewModel.restoreSessionEntries(initialSessionId, originalEntries)
+                                }
+                                onBack()
+                            }
+                        ) {
                             Text("Don't Save")
                         }
                     } else {
