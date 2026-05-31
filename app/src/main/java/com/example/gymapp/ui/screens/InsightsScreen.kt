@@ -37,11 +37,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +61,7 @@ import com.example.gymapp.ui.WorkoutCategory
 import com.example.gymapp.ui.components.WorkoutHeatmap
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -77,11 +80,16 @@ fun InsightsScreen(
     val context = LocalContext.current
     val graphicsLayer = rememberGraphicsLayer()
     val scope = rememberCoroutineScope()
+    val currentCalendar = Calendar.getInstance()
+    val currentYear = currentCalendar.get(Calendar.YEAR)
+    val currentMonth = currentCalendar.get(Calendar.MONTH)
     
     // Create a list of 24 months ending with the current month
-    val months = remember {
+    val months = remember(currentYear, currentMonth) {
         val list = mutableListOf<Pair<Int, Int>>()
         val cal = Calendar.getInstance()
+        cal.set(Calendar.YEAR, currentYear)
+        cal.set(Calendar.MONTH, currentMonth)
         for (i in 0 until 24) {
             list.add(cal.get(Calendar.YEAR) to cal.get(Calendar.MONTH))
             cal.add(Calendar.MONTH, -1)
@@ -93,6 +101,30 @@ fun InsightsScreen(
         initialPage = months.size - 1,
         pageCount = { months.size }
     )
+    var displayedPage by rememberSaveable(currentYear, currentMonth) {
+        mutableIntStateOf(months.lastIndex)
+    }
+
+    LaunchedEffect(currentYear, currentMonth) {
+        displayedPage = months.lastIndex
+        pagerState.scrollToPage(months.lastIndex)
+    }
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }
+            .collectLatest { page ->
+                displayedPage = page
+            }
+    }
+
+    val selectedMonthData = months[displayedPage.coerceIn(0, months.lastIndex)]
+    val selectedMonthLabel = run {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.YEAR, selectedMonthData.first)
+        cal.set(Calendar.MONTH, selectedMonthData.second)
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(cal.time)
+    }
 
     Scaffold(
         topBar = {
@@ -164,26 +196,20 @@ fun InsightsScreen(
                         IconButton(
                             onClick = {
                                 scope.launch {
-                                    if (pagerState.currentPage > 0) {
-                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                    if (displayedPage > 0) {
+                                        val nextPage = displayedPage - 1
+                                        displayedPage = nextPage
+                                        pagerState.animateScrollToPage(nextPage)
                                     }
                                 }
                             },
-                            enabled = pagerState.currentPage > 0
+                            enabled = displayedPage > 0
                         ) {
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month")
                         }
 
-                        val currentMonthData = months[pagerState.currentPage]
-                        val monthName = remember(currentMonthData) {
-                            val cal = Calendar.getInstance()
-                            cal.set(Calendar.YEAR, currentMonthData.first)
-                            cal.set(Calendar.MONTH, currentMonthData.second)
-                            SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(cal.time)
-                        }
-
                         Text(
-                            text = monthName,
+                            text = selectedMonthLabel,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -191,12 +217,14 @@ fun InsightsScreen(
                         IconButton(
                             onClick = {
                                 scope.launch {
-                                    if (pagerState.currentPage < months.size - 1) {
-                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                    if (displayedPage < months.size - 1) {
+                                        val nextPage = displayedPage + 1
+                                        displayedPage = nextPage
+                                        pagerState.animateScrollToPage(nextPage)
                                     }
                                 }
                             },
-                            enabled = pagerState.currentPage < months.size - 1
+                            enabled = displayedPage < months.size - 1
                         ) {
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Month")
                         }
@@ -231,9 +259,8 @@ fun InsightsScreen(
             }
 
             val allSessions by viewModel.allSessions.collectAsState(initial = emptyList())
-            val currentMonthData = months[pagerState.currentPage]
-            val availableWorkoutTypes = remember(currentMonthData, workoutStatsByMonth) {
-                val monthKey = "${currentMonthData.first}-${currentMonthData.second}"
+            val availableWorkoutTypes = remember(selectedMonthData, workoutStatsByMonth) {
+                val monthKey = "${selectedMonthData.first}-${selectedMonthData.second}"
                 val presentTypes = workoutStatsByMonth[monthKey]
                     ?.values
                     ?.flatten()
@@ -261,9 +288,9 @@ fun InsightsScreen(
                 }
             }
             
-            val monthStats = remember(allSessions, currentMonthData) {
-                val year = currentMonthData.first
-                val month = currentMonthData.second
+            val monthStats = remember(allSessions, selectedMonthData) {
+                val year = selectedMonthData.first
+                val month = selectedMonthData.second
                 
                 val cal = Calendar.getInstance()
                 val isCurrentMonth = cal.get(Calendar.YEAR) == year && cal.get(Calendar.MONTH) == month
