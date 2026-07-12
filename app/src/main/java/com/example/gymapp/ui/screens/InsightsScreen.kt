@@ -57,6 +57,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.ui.WorkoutCategory
 import com.example.gymapp.ui.components.WorkoutHeatmap
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
@@ -289,38 +290,11 @@ fun InsightsScreen(
             }
             
             val monthStats = remember(allSessions, selectedMonthData) {
-                val year = selectedMonthData.first
-                val month = selectedMonthData.second
-                
-                val cal = Calendar.getInstance()
-                val isCurrentMonth = cal.get(Calendar.YEAR) == year && cal.get(Calendar.MONTH) == month
-                
-                val monthSessions = allSessions.filter {
-                    val sCal = Calendar.getInstance()
-                    sCal.timeInMillis = it.timestamp
-                    sCal.get(Calendar.YEAR) == year && sCal.get(Calendar.MONTH) == month
-                }
-                
-                val workoutDays = monthSessions.map {
-                    val sCal = Calendar.getInstance()
-                    sCal.timeInMillis = it.timestamp
-                    sCal.get(Calendar.DAY_OF_YEAR)
-                }.distinct().size
-                
-                val totalDaysInCalculation = if (isCurrentMonth) {
-                    cal.get(Calendar.DAY_OF_MONTH)
-                } else {
-                    val mCal = Calendar.getInstance()
-                    mCal.set(Calendar.YEAR, year)
-                    mCal.set(Calendar.MONTH, month)
-                    mCal.getActualMaximum(Calendar.DAY_OF_MONTH)
-                }
-                
-                val avgPerWeek = if (totalDaysInCalculation > 0) {
-                    (workoutDays.toDouble() / (totalDaysInCalculation.toDouble() / 7.0))
-                } else 0.0
-                
-                Triple(monthSessions.size, workoutDays, avgPerWeek)
+                calculateWorkoutSummary(
+                    sessions = allSessions,
+                    year = selectedMonthData.first,
+                    month = selectedMonthData.second
+                )
             }
 
             if (availableWorkoutTypes.isNotEmpty()) {
@@ -391,25 +365,87 @@ fun InsightsScreen(
             ) {
                 StatCard(
                     label = "Total Workouts",
-                    value = monthStats.first.toString(),
+                    value = monthStats.totalWorkouts.toString(),
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     label = "Workouts This Month",
-                    value = monthStats.second.toString(),
+                    value = monthStats.workoutDays.toString(),
                     modifier = Modifier.weight(1f)
                 )
             }
 
             StatCard(
                 label = "Avg Per Week",
-                value = String.format(Locale.getDefault(), "%.1f", monthStats.third),
+                value = String.format(Locale.getDefault(), "%.1f", monthStats.averagePerWeek),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
+}
+
+internal data class WorkoutSummary(
+    val totalWorkouts: Int,
+    val workoutDays: Int,
+    val averagePerWeek: Double
+)
+
+internal fun calculateWorkoutSummary(
+    sessions: List<WorkoutSession>,
+    year: Int,
+    month: Int,
+    today: Calendar = Calendar.getInstance()
+): WorkoutSummary {
+    val totalWorkoutDays = sessions
+        .map { session ->
+            Calendar.getInstance().apply { timeInMillis = session.timestamp }.let { sessionDate ->
+                Triple(
+                    sessionDate.get(Calendar.YEAR),
+                    sessionDate.get(Calendar.MONTH),
+                    sessionDate.get(Calendar.DAY_OF_MONTH)
+                )
+            }
+        }
+        .distinct()
+        .size
+
+    val monthSessions = sessions.filter { session ->
+        Calendar.getInstance().apply { timeInMillis = session.timestamp }.let { sessionDate ->
+            sessionDate.get(Calendar.YEAR) == year && sessionDate.get(Calendar.MONTH) == month
+        }
+    }
+
+    val workoutDays = monthSessions
+        .map { session ->
+            Calendar.getInstance().apply { timeInMillis = session.timestamp }
+                .get(Calendar.DAY_OF_MONTH)
+        }
+        .distinct()
+        .size
+
+    val isCurrentMonth = today.get(Calendar.YEAR) == year && today.get(Calendar.MONTH) == month
+    val totalDays = if (isCurrentMonth) {
+        today.get(Calendar.DAY_OF_MONTH)
+    } else {
+        Calendar.getInstance().apply {
+            set(Calendar.YEAR, year)
+            set(Calendar.MONTH, month)
+            set(Calendar.DAY_OF_MONTH, 1)
+        }.getActualMaximum(Calendar.DAY_OF_MONTH)
+    }
+    val averagePerWeek = if (totalDays > 0) {
+        workoutDays.toDouble() / (totalDays.toDouble() / 7.0)
+    } else {
+        0.0
+    }
+
+    return WorkoutSummary(
+        totalWorkouts = totalWorkoutDays,
+        workoutDays = workoutDays,
+        averagePerWeek = averagePerWeek
+    )
 }
 
 @Composable
