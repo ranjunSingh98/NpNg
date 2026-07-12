@@ -193,7 +193,7 @@ private fun HeatmapBlock(
                     }
                     Box(
                         modifier = Modifier
-                            .size(2.5.dp)
+                            .size(3.25.dp)
                             .clip(RoundedCornerShape(50))
                             .background(dotColor)
                     )
