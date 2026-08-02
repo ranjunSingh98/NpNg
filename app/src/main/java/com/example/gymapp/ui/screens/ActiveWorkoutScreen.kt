@@ -84,6 +84,24 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+internal enum class SessionBackAction {
+    ExitWithoutPrompt,
+    DiscardEmptySessionAndExit,
+    ConfirmExit,
+}
+
+internal fun resolveSessionBackAction(
+    isResumedSession: Boolean,
+    originalResumedEntries: List<ExerciseEntry>?,
+    currentEntries: List<ExerciseEntry>,
+): SessionBackAction = when {
+    isResumedSession && originalResumedEntries == currentEntries ->
+        SessionBackAction.ExitWithoutPrompt
+    !isResumedSession && currentEntries.isEmpty() ->
+        SessionBackAction.DiscardEmptySessionAndExit
+    else -> SessionBackAction.ConfirmExit
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ActiveWorkoutScreen(
@@ -184,19 +202,31 @@ fun ActiveWorkoutScreen(
             lastTimeExpanded = false
         }
 
-        if (currentEntries.isEmpty()) {
-            activeSessionId?.let { viewModel.discardCurrentSession(it) }
-            if (delayNeeded) {
-                delay(300)
+        when (
+            resolveSessionBackAction(
+                isResumedSession = initialSessionId != null,
+                originalResumedEntries = originalResumedEntries,
+                currentEntries = currentEntries,
+            )
+        ) {
+            SessionBackAction.ExitWithoutPrompt -> onBack()
+
+            SessionBackAction.DiscardEmptySessionAndExit -> {
+                activeSessionId?.let { viewModel.discardCurrentSession(it) }
+                if (delayNeeded) {
+                    delay(300)
+                }
+                onBack()
             }
-            onBack()
-        } else {
-            showExitDialog = true
-            if (delayNeeded) {
-                delay(300)
+
+            SessionBackAction.ConfirmExit -> {
+                showExitDialog = true
+                if (delayNeeded) {
+                    delay(300)
+                }
+                // Reset if we're showing a dialog and not actually navigating back yet.
+                isBackActionProcessing = false
             }
-            // Reset if we're showing a dialog and not actually navigating back yet
-            isBackActionProcessing = false
         }
     }
 
