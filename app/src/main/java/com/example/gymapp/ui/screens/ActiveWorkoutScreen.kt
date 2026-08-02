@@ -304,7 +304,7 @@ fun ActiveWorkoutScreen(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(scrollState)
-                    .padding(top = 4.dp, bottom = 16.dp),
+                    .padding(top = 2.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (previousWorkout != null) {
