@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -25,6 +26,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -52,9 +55,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.data.model.ExerciseEntry
+import com.example.gymapp.data.model.WorkoutWithEntries
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
@@ -89,6 +95,9 @@ fun ActiveWorkoutScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     var lastTimeExpanded by remember { mutableStateOf(false) }
     var activeSessionId by remember { mutableStateOf<Long?>(initialSessionId) }
+    var previousWorkoutIndex by rememberSaveable(workoutType, activeSessionId) {
+        mutableStateOf(0)
+    }
     var expandedAutocomplete by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
     var isBackActionProcessing by remember { mutableStateOf(false) }
@@ -123,22 +132,22 @@ fun ActiveWorkoutScreen(
         }
     }
 
-    val previousSession by remember(workoutType, activeSessionId) {
+    val previousWorkouts by remember(workoutType, activeSessionId) {
         if (activeSessionId != null) {
-            viewModel.getPreviousSession(workoutType, activeSessionId!!)
+            viewModel.getPreviousWorkouts(workoutType, activeSessionId!!)
         } else {
-            flowOf(null)
-        }
-    }.collectAsState(initial = null)
-
-    // Collect last workout entries based on activeSessionId
-    val lastWorkoutEntries by remember(workoutType, activeSessionId) {
-        if (activeSessionId != null) {
-            viewModel.getPreviousWorkoutEntries(workoutType, activeSessionId!!)
-        } else {
-            flowOf(emptyList())
+            flowOf(emptyList<WorkoutWithEntries>())
         }
     }.collectAsState(initial = emptyList())
+
+    LaunchedEffect(previousWorkouts.size) {
+        previousWorkoutIndex = previousWorkoutIndex.coerceIn(
+            minimumValue = 0,
+            maximumValue = previousWorkouts.lastIndex.coerceAtLeast(0),
+        )
+    }
+
+    val previousWorkout = previousWorkouts.getOrNull(previousWorkoutIndex)
 
     val currentEntries by remember(activeSessionId) {
         if (activeSessionId != null) {
@@ -148,8 +157,8 @@ fun ActiveWorkoutScreen(
         }
     }.collectAsState(initial = emptyList())
 
-    val groupedLastEntries = remember(lastWorkoutEntries) {
-        lastWorkoutEntries.groupBy { it.exerciseName }
+    val groupedPreviousEntries = remember(previousWorkout) {
+        previousWorkout?.entries?.groupBy { it.exerciseName }.orEmpty()
     }
 
     val scope = rememberCoroutineScope()
@@ -298,7 +307,7 @@ fun ActiveWorkoutScreen(
                     .padding(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (lastWorkoutEntries.isNotEmpty()) {
+                if (previousWorkout != null) {
                     val lastWorkoutDateFormat = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
@@ -308,35 +317,65 @@ fun ActiveWorkoutScreen(
                                 .clickable { lastTimeExpanded = !lastTimeExpanded }
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            Box(modifier = Modifier.weight(1f))
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(48.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (previousWorkoutIndex < previousWorkouts.lastIndex) {
+                                        IconButton(
+                                            onClick = { previousWorkoutIndex += 1 },
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                                contentDescription = "Show older workout",
+                                            )
+                                        }
+                                    }
+                                }
                                 Text(
-                                    text = "Last time",
+                                    text = lastWorkoutDateFormat.format(
+                                        Date(previousWorkout.session.timestamp)
+                                    ),
                                     style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                                    fontWeight = FontWeight.Bold
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 )
-                                previousSession?.let { session ->
-                                    Text(
-                                        text = lastWorkoutDateFormat.format(Date(session.timestamp)),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.padding(start = 8.dp)
-                                    )
+                                Box(
+                                    modifier = Modifier.size(48.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (previousWorkoutIndex > 0) {
+                                        IconButton(
+                                            onClick = { previousWorkoutIndex -= 1 },
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                                contentDescription = "Show newer workout",
+                                            )
+                                        }
+                                    }
                                 }
                             }
-                            Icon(
-                                imageVector = if (lastTimeExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (lastTimeExpanded) "Collapse History" else "Expand History",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            Box(
+                                modifier = Modifier.weight(1f),
+                                contentAlignment = Alignment.CenterEnd,
+                            ) {
+                                Icon(
+                                    imageVector = if (lastTimeExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = if (lastTimeExpanded) "Collapse History" else "Expand History",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
 
                         AnimatedVisibility(visible = lastTimeExpanded) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                groupedLastEntries.forEach { (name, entries) ->
-                                    CollapsibleExerciseCard(exerciseName = name, entries = entries)
+                                key(previousWorkout.session.id) {
+                                    groupedPreviousEntries.forEach { (name, entries) ->
+                                        CollapsibleExerciseCard(exerciseName = name, entries = entries)
+                                    }
                                 }
                             }
                         }

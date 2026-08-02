@@ -3,6 +3,7 @@ package com.example.gymapp.data.repository
 import com.example.gymapp.data.dao.WorkoutDao
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.WorkoutSession
+import com.example.gymapp.data.model.WorkoutWithEntries
 import kotlinx.coroutines.flow.Flow
 
 class WorkoutRepository(private val workoutDao: WorkoutDao) {
@@ -40,13 +41,11 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
         return workoutDao.getSessionById(id)
     }
 
-    fun getPreviousSessionBefore(type: String, currentSessionId: Long): Flow<WorkoutSession?> {
-        return workoutDao.getPreviousSessionBefore(type, currentSessionId)
-    }
-
-    fun getEntriesFromSessionBefore(type: String, currentSessionId: Long): Flow<List<ExerciseEntry>> {
-        return workoutDao.getEntriesFromSessionBefore(type, currentSessionId)
-    }
+    fun getPreviousWorkoutsBefore(
+        type: String,
+        currentSessionId: Long,
+    ): Flow<List<WorkoutWithEntries>> =
+        workoutDao.getPreviousWorkoutsBefore(type, currentSessionId)
 
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {
         return workoutDao.getEntriesForSession(sessionId)

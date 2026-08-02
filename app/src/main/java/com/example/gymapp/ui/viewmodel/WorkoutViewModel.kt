@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.GymAppData
 import com.example.gymapp.data.model.WorkoutSession
+import com.example.gymapp.data.model.WorkoutWithEntries
 import com.example.gymapp.data.repository.UserPreferencesRepository
 import com.example.gymapp.data.repository.WorkoutRepository
 import com.example.gymapp.ui.WorkoutCategory
@@ -28,55 +29,24 @@ class WorkoutViewModel(
     val allSessions: Flow<List<WorkoutSession>> = repository.allSessions
 
     val lastWorkoutDatesByType: StateFlow<Map<String, Long>> = allSessions
-        .map { sessions ->
-            sessions
-                .groupBy { it.type }
-                .mapValues { (_, groupedSessions) ->
-                    groupedSessions.maxOf { it.timestamp }
-                }
-        }.stateIn(
+        .map(::latestWorkoutDatesByType)
+        .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
         )
 
     val workoutDaysByMonth: StateFlow<Map<String, Set<Int>>> = allSessions
-        .map { sessions ->
-            val map = mutableMapOf<String, MutableSet<Int>>()
-            val cal = Calendar.getInstance()
-            sessions.forEach { session ->
-                cal.timeInMillis = session.timestamp
-                val year = cal.get(Calendar.YEAR)
-                val month = cal.get(Calendar.MONTH) // 0-indexed
-                val day = cal.get(Calendar.DAY_OF_MONTH)
-                val key = "$year-$month"
-                map.getOrPut(key) { mutableSetOf() }.add(day)
-            }
-            map
-        }.stateIn(
+        .map(::workoutDaysByMonth)
+        .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
         )
 
     val workoutStatsByMonth: StateFlow<Map<String, Map<Int, List<String>>>> = allSessions
-        .map { sessions ->
-            val map = mutableMapOf<String, MutableMap<Int, MutableList<String>>>()
-            val cal = Calendar.getInstance()
-            sessions.forEach { session ->
-                cal.timeInMillis = session.timestamp
-                val year = cal.get(Calendar.YEAR)
-                val month = cal.get(Calendar.MONTH) // 0-indexed
-                val day = cal.get(Calendar.DAY_OF_MONTH)
-                val key = "$year-$month"
-                val monthMap = map.getOrPut(key) { mutableMapOf() }
-                val dayList = monthMap.getOrPut(day) { mutableListOf() }
-                if (!dayList.contains(session.type)) {
-                    dayList.add(session.type)
-                }
-            }
-            map
-        }.stateIn(
+        .map(::workoutStatsByMonth)
+        .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
@@ -153,20 +123,8 @@ class WorkoutViewModel(
     }
 
     val orderedCategories: StateFlow<List<WorkoutCategory>> = userPreferencesRepository.categoryOrder
-        .map { order ->
-            if (order.isEmpty()) {
-                WorkoutCategory.categories
-            } else {
-                order.mapNotNull { name -> WorkoutCategory.getByName(name) }
-                    .let { ordered ->
-                        // Add any categories that aren't in the saved order yet
-                        val missing = WorkoutCategory.categories.filter { cat ->
-                            !ordered.any { it.name.equals(cat.name, ignoreCase = true) }
-                        }
-                        (ordered + missing).distinctBy { it.name.lowercase() }
-                    }
-            }
-        }.stateIn(
+        .map(::orderedWorkoutCategories)
+        .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
@@ -245,13 +203,11 @@ class WorkoutViewModel(
         }
     }
 
-    fun getPreviousSession(type: String, currentSessionId: Long): Flow<WorkoutSession?> {
-        return repository.getPreviousSessionBefore(type, currentSessionId)
-    }
-
-    fun getPreviousWorkoutEntries(type: String, currentSessionId: Long): Flow<List<ExerciseEntry>> {
-        return repository.getEntriesFromSessionBefore(type, currentSessionId)
-    }
+    fun getPreviousWorkouts(
+        type: String,
+        currentSessionId: Long,
+    ): Flow<List<WorkoutWithEntries>> =
+        repository.getPreviousWorkoutsBefore(type, currentSessionId)
 
     fun getEntriesForSession(sessionId: Long): Flow<List<ExerciseEntry>> {
         return repository.getEntriesForSession(sessionId)
@@ -283,4 +239,54 @@ class WorkoutViewModel(
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
+}
+
+internal fun latestWorkoutDatesByType(
+    sessions: List<WorkoutSession>,
+): Map<String, Long> = sessions
+    .groupBy { it.type }
+    .mapValues { (_, groupedSessions) -> groupedSessions.maxOf { it.timestamp } }
+
+internal fun workoutDaysByMonth(
+    sessions: List<WorkoutSession>,
+): Map<String, Set<Int>> {
+    val daysByMonth = mutableMapOf<String, MutableSet<Int>>()
+    val calendar = Calendar.getInstance()
+    sessions.forEach { session ->
+        calendar.timeInMillis = session.timestamp
+        val key = "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
+        daysByMonth.getOrPut(key) { mutableSetOf() }
+            .add(calendar.get(Calendar.DAY_OF_MONTH))
+    }
+    return daysByMonth
+}
+
+internal fun workoutStatsByMonth(
+    sessions: List<WorkoutSession>,
+): Map<String, Map<Int, List<String>>> {
+    val statsByMonth = mutableMapOf<String, MutableMap<Int, MutableList<String>>>()
+    val calendar = Calendar.getInstance()
+    sessions.forEach { session ->
+        calendar.timeInMillis = session.timestamp
+        val key = "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH)}"
+        val workoutTypes = statsByMonth
+            .getOrPut(key) { mutableMapOf() }
+            .getOrPut(calendar.get(Calendar.DAY_OF_MONTH)) { mutableListOf() }
+        if (session.type !in workoutTypes) {
+            workoutTypes.add(session.type)
+        }
+    }
+    return statsByMonth
+}
+
+internal fun orderedWorkoutCategories(
+    savedOrder: List<String>,
+): List<WorkoutCategory> {
+    if (savedOrder.isEmpty()) return WorkoutCategory.categories
+
+    val ordered = savedOrder.mapNotNull(WorkoutCategory::getByName)
+    val missing = WorkoutCategory.categories.filter { category ->
+        ordered.none { it.name.equals(category.name, ignoreCase = true) }
+    }
+    return (ordered + missing).distinctBy { it.name.lowercase() }
 }

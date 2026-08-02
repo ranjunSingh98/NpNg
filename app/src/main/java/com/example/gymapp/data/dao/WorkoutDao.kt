@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.WorkoutSession
+import com.example.gymapp.data.model.WorkoutWithEntries
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -62,24 +63,32 @@ interface WorkoutDao {
     @Query("SELECT timestamp FROM workout_sessions WHERE type = :workoutType ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastWorkoutTimestampByType(workoutType: String): Long?
 
-    @Query("""
-        SELECT * FROM workout_sessions 
-        WHERE type = :type AND timestamp < (SELECT timestamp FROM workout_sessions WHERE id = :currentSessionId)
-        ORDER BY timestamp DESC LIMIT 1
-    """)
-    fun getPreviousSessionBefore(type: String, currentSessionId: Long): Flow<WorkoutSession?>
-
     @Transaction
     @Query("""
-        SELECT * FROM exercise_entries 
-        WHERE sessionId = (
-            SELECT id FROM workout_sessions 
-            WHERE type = :type AND timestamp < (SELECT timestamp FROM workout_sessions WHERE id = :currentSessionId)
-            ORDER BY timestamp DESC LIMIT 1
-        )
-        ORDER BY id ASC
+        SELECT * FROM workout_sessions AS previous
+        WHERE previous.type = :type
+            AND previous.id != :currentSessionId
+            AND EXISTS (
+                SELECT 1 FROM exercise_entries
+                WHERE exercise_entries.sessionId = previous.id
+            )
+            AND (
+                previous.timestamp < (
+                    SELECT timestamp FROM workout_sessions WHERE id = :currentSessionId
+                )
+                OR (
+                    previous.timestamp = (
+                        SELECT timestamp FROM workout_sessions WHERE id = :currentSessionId
+                    )
+                    AND previous.id < :currentSessionId
+                )
+            )
+        ORDER BY previous.timestamp DESC, previous.id DESC
     """)
-    fun getEntriesFromSessionBefore(type: String, currentSessionId: Long): Flow<List<ExerciseEntry>>
+    fun getPreviousWorkoutsBefore(
+        type: String,
+        currentSessionId: Long,
+    ): Flow<List<WorkoutWithEntries>>
 
     @Query("""
         SELECT DISTINCT TRIM(LOWER(exerciseName))
