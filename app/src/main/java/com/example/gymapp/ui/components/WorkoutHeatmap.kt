@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymapp.ui.WorkoutCategory
+import com.example.gymapp.ui.contentAccentColor
 import java.util.Calendar
 
 @Composable
@@ -122,7 +123,7 @@ private fun HeatmapBlock(
     val activityLevel = workouts.size.coerceAtMost(3)
     val highlightColor = highlightedWorkoutType
         ?.let(WorkoutCategory::getByName)
-        ?.accentColor
+        ?.contentAccentColor()
         ?: MaterialTheme.colorScheme.primary
     val matchesHighlight = highlightedWorkoutType != null &&
         workouts.any { it.equals(highlightedWorkoutType, ignoreCase = true) }
@@ -185,7 +186,8 @@ private fun HeatmapBlock(
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 workouts.take(activityLevel).forEach { workoutType ->
-                    val categoryColor = WorkoutCategory.getByName(workoutType)?.accentColor
+                    val categoryColor = WorkoutCategory.getByName(workoutType)
+                        ?.contentAccentColor()
                     val dotColor = when {
                         highlightedWorkoutType == null -> categoryColor ?: MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
                         matchesHighlight -> categoryColor ?: highlightColor.copy(alpha = 0.95f)

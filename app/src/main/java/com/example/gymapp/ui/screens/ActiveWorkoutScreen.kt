@@ -75,7 +75,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.data.model.ExerciseEntry
+import com.example.gymapp.data.model.WeightUnit
 import com.example.gymapp.data.model.WorkoutWithEntries
+import com.example.gymapp.data.model.displayWeightToStoredPounds
+import com.example.gymapp.data.model.formatStoredWeight
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
@@ -179,6 +182,7 @@ fun ActiveWorkoutScreen(
             flowOf(emptyList())
         }
     }.collectAsState(initial = emptyList())
+    val weightUnit by viewModel.weightUnit.collectAsState()
 
     val groupedPreviousEntries = remember(previousWorkout) {
         previousWorkout?.entries?.groupBy { it.exerciseName }.orEmpty()
@@ -414,7 +418,11 @@ fun ActiveWorkoutScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 key(previousWorkout.session.id) {
                                     groupedPreviousEntries.forEach { (name, entries) ->
-                                        CollapsibleExerciseCard(exerciseName = name, entries = entries)
+                                        CollapsibleExerciseCard(
+                                            exerciseName = name,
+                                            entries = entries,
+                                            weightUnit = weightUnit,
+                                        )
                                     }
                                 }
                             }
@@ -495,11 +503,11 @@ fun ActiveWorkoutScreen(
                         OutlinedTextField(
                             value = weight,
                             onValueChange = { weight = it },
-                            label = { Text("Weight (lbs)") },
+                            label = { Text("Weight (${weightUnit.symbol})") },
                             modifier = Modifier
                                 .weight(1f)
                                 .focusRequester(weightFocusRequester),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             trailingIcon = if (weight.isNotBlank()) {
                                 {
                                     IconButton(onClick = { 
@@ -538,17 +546,22 @@ fun ActiveWorkoutScreen(
                         expandedAutocomplete = false
                         val repsInt = reps.toIntOrNull() ?: 0
                         val durationInt = duration.toIntOrNull() ?: 0
+                        val displayWeight = weight.replace(',', '.').toDoubleOrNull()
+                        val storedWeight = displayWeight?.displayWeightToStoredPounds(weightUnit)
                         
                         if (exerciseName.isNotBlank() && (
                             (isCardio && durationInt > 0) || 
-                            (!isCardio && weight.isNotBlank() && repsInt > 0)
+                            (
+                                !isCardio && displayWeight != null && displayWeight.isFinite() &&
+                                    displayWeight >= 0 && repsInt > 0
+                            )
                         )) {
                             val nextSetNumber = currentEntries.filter { it.exerciseName.equals(exerciseName, ignoreCase = true) }.size + 1
                             activeSessionId?.let {
                                 viewModel.addEntry(
                                     sessionId = it,
                                     exerciseName = exerciseName,
-                                    weight = weight.toDoubleOrNull() ?: 0.0,
+                                    weight = storedWeight ?: 0.0,
                                     reps = repsInt,
                                     setNumber = nextSetNumber,
                                     durationSeconds = if (isCardio) durationInt * 60 else null
@@ -617,7 +630,11 @@ fun ActiveWorkoutScreen(
                             if (isCardio && durationSeconds != null) {
                                 Text(text = "${durationSeconds / 60} min", fontWeight = FontWeight.Bold)
                             } else {
-                                Text(text = "${entry.weight} lbs x ${entry.reps}", fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "${entry.weight.formatStoredWeight(weightUnit)} " +
+                                        "${weightUnit.symbol} x ${entry.reps}",
+                                    fontWeight = FontWeight.Bold,
+                                )
                             }
                         }
                     }
@@ -647,7 +664,11 @@ fun ActiveWorkoutScreen(
 }
 
 @Composable
-fun CollapsibleExerciseCard(exerciseName: String, entries: List<ExerciseEntry>) {
+fun CollapsibleExerciseCard(
+    exerciseName: String,
+    entries: List<ExerciseEntry>,
+    weightUnit: WeightUnit,
+) {
     var expanded by remember { mutableStateOf(true) }
     val shape = RoundedCornerShape(12.dp)
     Card(
@@ -678,8 +699,8 @@ fun CollapsibleExerciseCard(exerciseName: String, entries: List<ExerciseEntry>) 
                     val text = if (durationSeconds != null) {
                         "${durationSeconds / 60}m"
                     } else {
-                        val weightStr = if (entry.weight % 1.0 == 0.0) entry.weight.toInt().toString() else entry.weight.toString()
-                        "${weightStr}lb×${entry.reps}"
+                        "${entry.weight.formatStoredWeight(weightUnit)}" +
+                            "${weightUnit.symbol}×${entry.reps}"
                     }
                     
                     Surface(

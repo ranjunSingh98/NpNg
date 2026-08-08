@@ -40,7 +40,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.data.model.WorkoutSession
+import com.example.gymapp.data.model.formatStoredWeight
 import com.example.gymapp.ui.WorkoutCategory
+import com.example.gymapp.ui.contentAccentColor
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -57,8 +59,10 @@ fun WorkoutSessionCard(
     var expanded by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy - HH:mm", Locale.getDefault()) }
     val category = remember(session.type) { WorkoutCategory.getByName(session.type) }
+    val contentAccentColor = category?.contentAccentColor()
     
     val entries by viewModel.getEntriesForSession(session.id).collectAsState(initial = emptyList())
+    val weightUnit by viewModel.weightUnit.collectAsState()
 
     val dismissState = rememberSwipeToDismissBoxState()
 
@@ -127,14 +131,22 @@ fun WorkoutSessionCard(
                             Icon(
                                 painter = painterResource(id = category.iconRes),
                                 contentDescription = null,
-                                tint = if (category.tintIcon) category.accentColor else Color.Unspecified,
+                                tint = if (category.tintIcon) {
+                                    contentAccentColor ?: Color.Unspecified
+                                } else {
+                                    Color.Unspecified
+                                },
                                 modifier = Modifier.size(24.dp)
                             )
                         } else if (category?.imageVector != null) {
                             Icon(
                                 imageVector = category.imageVector,
                                 contentDescription = null,
-                                tint = if (category.tintIcon) category.accentColor else Color.Unspecified,
+                                tint = if (category.tintIcon) {
+                                    contentAccentColor ?: Color.Unspecified
+                                } else {
+                                    Color.Unspecified
+                                },
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -142,7 +154,7 @@ fun WorkoutSessionCard(
                             text = session.type,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = category?.accentColor ?: MaterialTheme.colorScheme.onSurface
+                            color = contentAccentColor ?: MaterialTheme.colorScheme.onSurface
                         )
                     }
                     
@@ -161,7 +173,9 @@ fun WorkoutSessionCard(
                             val text = if (entry.durationSeconds != null) {
                                 "${entry.exerciseName}: ${entry.durationSeconds / 60} min"
                             } else {
-                                "${entry.exerciseName}: ${entry.weight}lbs x ${entry.reps}"
+                                "${entry.exerciseName}: " +
+                                    "${entry.weight.formatStoredWeight(weightUnit)}" +
+                                    "${weightUnit.symbol} x ${entry.reps}"
                             }
                             Text(
                                 text = text,

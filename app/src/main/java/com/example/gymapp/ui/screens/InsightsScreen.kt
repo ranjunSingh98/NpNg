@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.ui.WorkoutCategory
+import com.example.gymapp.ui.contentAccentColor
 import com.example.gymapp.ui.components.WorkoutHeatmap
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import kotlinx.coroutines.launch
@@ -346,10 +347,12 @@ fun InsightsScreen(
                             )
                             availableWorkoutTypes.forEach { workoutType ->
                                 val category = WorkoutCategory.getByName(workoutType)
+                                val categoryAccentColor = category?.contentAccentColor()
+                                    ?: MaterialTheme.colorScheme.primary
                                 FocusCircleButton(
                                     label = workoutType.take(2).uppercase(),
                                     selected = highlightedWorkoutType == workoutType,
-                                    accentColor = category?.accentColor ?: MaterialTheme.colorScheme.primary,
+                                    accentColor = categoryAccentColor,
                                     iconRes = category?.iconRes,
                                     onClick = { highlightedWorkoutType = workoutType }
                                 )

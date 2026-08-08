@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -72,6 +73,7 @@ fun DashboardScreen(
     onWorkoutSelected: (String, Long?) -> Unit,
     onViewHistory: () -> Unit,
     onViewInsights: () -> Unit,
+    onViewSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -216,6 +218,9 @@ fun DashboardScreen(
                 actions = {
                     IconButton(onClick = onViewInsights) {
                         Icon(Icons.Default.Insights, contentDescription = "Insights")
+                    }
+                    IconButton(onClick = onViewSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                     Box {
                         IconButton(onClick = { showMenu = true }) {

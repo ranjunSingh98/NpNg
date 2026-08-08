@@ -16,6 +16,7 @@ import com.example.gymapp.ui.screens.ActiveWorkoutScreen
 import com.example.gymapp.ui.screens.DashboardScreen
 import com.example.gymapp.ui.screens.HistoryScreen
 import com.example.gymapp.ui.screens.InsightsScreen
+import com.example.gymapp.ui.screens.SettingsScreen
 import com.example.gymapp.ui.viewmodel.WorkoutViewModel
 import androidx.compose.ui.platform.LocalContext
 
@@ -27,11 +28,13 @@ sealed class Screen(val route: String) {
     }
     object History : Screen("history")
     object Insights : Screen("insights")
+    object Settings : Screen("settings")
 }
 
 @Composable
 fun NpNgNavGraph(
     navController: NavHostController,
+    userPreferencesRepository: UserPreferencesRepository,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -41,7 +44,6 @@ fun NpNgNavGraph(
         factory = remember {
             val database = WorkoutDatabase.getDatabase(context)
             val workoutRepository = WorkoutRepository(database.workoutDao())
-            val userPreferencesRepository = UserPreferencesRepository(context)
             WorkoutViewModel.Factory(workoutRepository, userPreferencesRepository)
         }
     )
@@ -62,6 +64,9 @@ fun NpNgNavGraph(
                 },
                 onViewInsights = {
                     navController.navigate(Screen.Insights.route)
+                },
+                onViewSettings = {
+                    navController.navigate(Screen.Settings.route)
                 }
             )
         }
@@ -100,6 +105,12 @@ fun NpNgNavGraph(
             InsightsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
             )
         }
     }

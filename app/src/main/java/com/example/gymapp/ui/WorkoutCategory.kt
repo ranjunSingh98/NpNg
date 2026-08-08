@@ -1,5 +1,7 @@
 package com.example.gymapp.ui
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.gymapp.R
@@ -12,6 +14,8 @@ import com.example.gymapp.ui.theme.LegsGreen
 import com.example.gymapp.ui.theme.PullLime
 import com.example.gymapp.ui.theme.PushCyan
 import com.example.gymapp.ui.theme.ShouldersTeal
+import com.example.gymapp.ui.theme.LocalIsDarkTheme
+import com.example.gymapp.ui.theme.ensureMinimumContrast
 
 data class WorkoutCategory(
     val name: String,
@@ -44,3 +48,11 @@ data class WorkoutCategory(
         }
     }
 }
+
+@Composable
+fun WorkoutCategory.contentAccentColor(): Color =
+    if (LocalIsDarkTheme.current) {
+        accentColor
+    } else {
+        accentColor.ensureMinimumContrast(MaterialTheme.colorScheme.surface)
+    }

@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.gymapp.ui.WorkoutCategory
+import com.example.gymapp.ui.contentAccentColor
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -33,6 +34,7 @@ fun WorkoutCategoryCard(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(16.dp)
+    val contentAccentColor = category.contentAccentColor()
     ElevatedCard(
         shape = shape,
         modifier = modifier
@@ -52,14 +54,14 @@ fun WorkoutCategoryCard(
                 Icon(
                     painter = painterResource(id = category.iconRes),
                     contentDescription = category.name,
-                    tint = if (category.tintIcon) category.accentColor else Color.Unspecified,
+                    tint = if (category.tintIcon) contentAccentColor else Color.Unspecified,
                     modifier = Modifier.size(48.dp)
                 )
             } else if (category.imageVector != null) {
                 Icon(
                     imageVector = category.imageVector,
                     contentDescription = category.name,
-                    tint = if (category.tintIcon) category.accentColor else Color.Unspecified,
+                    tint = if (category.tintIcon) contentAccentColor else Color.Unspecified,
                     modifier = Modifier.size(48.dp)
                 )
             }
@@ -67,7 +69,7 @@ fun WorkoutCategoryCard(
                 Text(
                     text = category.name,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = category.accentColor
+                    color = contentAccentColor
                 )
                 if (lastWorkoutDate != null) {
                     Text(

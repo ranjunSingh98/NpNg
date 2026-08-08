@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.gymapp.data.model.ExerciseEntry
 import com.example.gymapp.data.model.GymAppData
+import com.example.gymapp.data.model.ThemeMode
+import com.example.gymapp.data.model.WeightUnit
 import com.example.gymapp.data.model.WorkoutSession
 import com.example.gymapp.data.model.WorkoutWithEntries
 import com.example.gymapp.data.repository.UserPreferencesRepository
@@ -137,6 +139,20 @@ class WorkoutViewModel(
             initialValue = true
         )
 
+    val themeMode: StateFlow<ThemeMode> = userPreferencesRepository.themeMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ThemeMode.Dark,
+        )
+
+    val weightUnit: StateFlow<WeightUnit> = userPreferencesRepository.weightUnit
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = WeightUnit.Pounds,
+        )
+
     fun saveCategoryOrder(categories: List<WorkoutCategory>) {
         viewModelScope.launch {
             userPreferencesRepository.saveCategoryOrder(categories.map { it.name })
@@ -146,6 +162,18 @@ class WorkoutViewModel(
     fun dismissUpdate03() {
         viewModelScope.launch {
             userPreferencesRepository.setHasSeenUpdate03(true)
+        }
+    }
+
+    fun setThemeMode(themeMode: ThemeMode) {
+        viewModelScope.launch {
+            userPreferencesRepository.setThemeMode(themeMode)
+        }
+    }
+
+    fun setWeightUnit(weightUnit: WeightUnit) {
+        viewModelScope.launch {
+            userPreferencesRepository.setWeightUnit(weightUnit)
         }
     }
 
